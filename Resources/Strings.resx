@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Nav_Home" xml:space="preserve"><value>Home</value></data>
+  <data name="Nav_Groups" xml:space="preserve"><value>Groups</value></data>
+  <data name="Nav_Snapshots" xml:space="preserve"><value>Layout snapshots</value></data>
+  <data name="Nav_Appearance" xml:space="preserve"><value>Appearance</value></data>
+  <data name="Nav_Quick" xml:space="preserve"><value>Quick actions</value></data>
+  <data name="Nav_About" xml:space="preserve"><value>About</value></data>
+  <data name="Home_Title" xml:space="preserve"><value>Welcome to MiniDesk</value></data>
+  <data name="Home_Subtitle" xml:space="preserve"><value>Keep your desktop tidy and everyday files within reach.</value></data>
+  <data name="Home_Start" xml:space="preserve"><value>Get started with MiniDesk  →</value></data>
+  <data name="Home_Organize" xml:space="preserve"><value>Organize groups</value></data>
+  <data name="Home_OrganizeDesc" xml:space="preserve"><value>Manage desktop files by type</value></data>
+  <data name="Home_Collapse" xml:space="preserve"><value>Collapse in one click</value></data>
+  <data name="Home_CollapseDesc" xml:space="preserve"><value>Quickly hide or expand groups</value></data>
+  <data name="Home_Snapshot" xml:space="preserve"><value>Layout snapshots</value></data>
+  <data name="Home_SnapshotDesc" xml:space="preserve"><value>Save your desktop layout anytime</value></data>
+  <data name="Home_Appearance" xml:space="preserve"><value>Personalize</value></data>
+  <data name="Home_AppearanceDesc" xml:space="preserve"><value>Create your own desktop style</value></data>
+  <data name="Groups_Title" xml:space="preserve"><value>Group management</value></data>
+  <data name="Groups_Subtitle" xml:space="preserve"><value>Manage desktop groups, display states, and linked items.</value></data>
+  <data name="Groups_New" xml:space="preserve"><value>＋  New group</value></data>
+  <data name="Groups_Name" xml:space="preserve"><value>Group name</value></data>
+  <data name="Groups_Items" xml:space="preserve"><value>Items</value></data>
+  <data name="Groups_State" xml:space="preserve"><value>Display state</value></data>
+  <data name="Groups_AutoCollapse" xml:space="preserve"><value>Enabled</value></data>
+  <data name="Groups_Actions" xml:space="preserve"><value>Actions</value></data>
+  <data name="Groups_Rename" xml:space="preserve"><value>Rename</value></data>
+  <data name="Groups_Delete" xml:space="preserve"><value>Delete</value></data>
+  <data name="State_Expanded" xml:space="preserve"><value>Expanded</value></data>
+  <data name="State_Collapsed" xml:space="preserve"><value>Collapsed</value></data>
+  <data name="State_IconOnly" xml:space="preserve"><value>Icon only</value></data>
+  <data name="Snapshots_Title" xml:space="preserve"><value>Layout snapshots</value></data>
+  <data name="Snapshots_Subtitle" xml:space="preserve"><value>Save layouts anytime; restore points are also created before major changes.</value></data>
+  <data name="Snapshots_Create" xml:space="preserve"><value>＋  Create snapshot</value></data>
+  <data name="Snapshots_Manual" xml:space="preserve"><value>Manual</value></data>
+  <data name="Snapshots_Restore" xml:space="preserve"><value>Restore this layout</value></data>
+  <data name="Snapshots_Preview" xml:space="preserve"><value>Preview snapshot</value></data>
+  <data name="Snapshots_Delete" xml:space="preserve"><value>Delete snapshot</value></data>
+  <data name="Appearance_Title" xml:space="preserve"><value>Appearance</value></data>
+  <data name="Appearance_Subtitle" xml:space="preserve"><value>Customize how desktop groups look.</value></data>
+  <data name="Appearance_Theme" xml:space="preserve"><value>App theme</value></data>
+  <data name="Theme_System" xml:space="preserve"><value>Use system setting</value></data>
+  <data name="Theme_SystemDesc" xml:space="preserve"><value>Follow Windows theme</value></data>
+  <data name="Theme_Light" xml:space="preserve"><value>Light</value></data>
+  <data name="Theme_LightDesc" xml:space="preserve"><value>A clear, bright interface</value></data>
+  <data name="Theme_Dark" xml:space="preserve"><value>Dark</value></data>
+  <data name="Theme_DarkDesc" xml:space="preserve"><value>A focused, immersive experience</value></data>
+  <data name="Appearance_CollapseStyle" xml:space="preserve"><value>Default collapsed style</value></data>
+  <data name="Collapse_Capsule" xml:space="preserve"><value>Horizontal capsule</value></data>
+  <data name="Collapse_Vertical" xml:space="preserve"><value>Vertical icon</value></data>
+  <data name="Collapse_IconOnly" xml:space="preserve"><value>Icon only</value></data>
+  <data name="Appearance_Parameters" xml:space="preserve"><value>Appearance parameters</value></data>
+  <data name="Appearance_Opacity" xml:space="preserve"><value>Panel opacity</value></data>
+  <data name="Appearance_Radius" xml:space="preserve"><value>Corner radius</value></data>
+  <data name="Appearance_HeaderHeight" xml:space="preserve"><value>Header height</value></data>
+  <data name="Appearance_ShowIcon" xml:space="preserve"><value>Show group icon when collapsed</value></data>
+  <data name="Appearance_ShowBadge" xml:space="preserve"><value>Show item-count badge</value></data>
+  <data name="Appearance_AttachDesktop" xml:space="preserve"><value>Attach to Windows desktop layer</value></data>
+  <data name="Appearance_Preview" xml:space="preserve"><value>Live preview</value></data>
+  <data name="Appearance_Documents" xml:space="preserve"><value>Documents</value></data>
+  <data name="Appearance_Pictures" xml:space="preserve"><value>Pictures</value></data>
+  <data name="Appearance_Development" xml:space="preserve"><value>Development</value></data>
+  <data name="Quick_Title" xml:space="preserve"><value>Quick actions</value></data>
+  <data name="Quick_Subtitle" xml:space="preserve"><value>Common controls to organize your desktop efficiently.</value></data>
+  <data name="Quick_ExpandAll" xml:space="preserve"><value>Expand all</value></data>
+  <data name="Quick_ExpandAllDesc" xml:space="preserve"><value>Expand every group now</value></data>
+  <data name="Quick_CollapseAll" xml:space="preserve"><value>Collapse all</value></data>
+  <data name="Quick_CollapseAllDesc" xml:space="preserve"><value>Collapse every group in one click</value></data>
+  <data name="Quick_OpenConfig" xml:space="preserve"><value>Open configuration folder</value></data>
+  <data name="Quick_OpenConfigDesc" xml:space="preserve"><value>Open it in File Explorer</value></data>
+  <data name="Quick_StartupRecovery" xml:space="preserve"><value>Startup and recovery</value></data>
+  <data name="Quick_Startup" xml:space="preserve"><value>Start MiniDesk after Windows sign-in</value></data>
+  <data name="Quick_StartupDesc" xml:space="preserve"><value>Run automatically and keep organizing your desktop</value></data>
+  <data name="Quick_ExplorerRecovery" xml:space="preserve"><value>Restore groups after Explorer restarts</value></data>
+  <data name="Quick_ExplorerRecoveryDesc" xml:space="preserve"><value>Restore the desktop layout after Explorer restarts</value></data>
+  <data name="About_Tagline" xml:space="preserve"><value>A practical tool focused on organizing the Windows desktop</value></data>
+  <data name="About_Language" xml:space="preserve"><value>Language</value></data>
+  <data name="Language_ZhCN" xml:space="preserve"><value>简体中文</value></data>
+  <data name="Language_EnUS" xml:space="preserve"><value>English</value></data>
+  <data name="Sidebar_Line1" xml:space="preserve"><value>A tidier desktop</value></data>
+  <data name="Sidebar_Line2" xml:space="preserve"><value>Everyday files within reach</value></data>
+  <data name="Common_Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Common_Confirm" xml:space="preserve"><value>OK</value></data>
+  <data name="Common_Close" xml:space="preserve"><value>Close</value></data>
+  <data name="Common_Rename" xml:space="preserve"><value>Rename</value></data>
+  <data name="Common_Delete" xml:space="preserve"><value>Delete</value></data>
+  <data name="Common_Settings" xml:space="preserve"><value>Open settings</value></data>
+  <data name="Group_Collapse" xml:space="preserve"><value>Collapse</value></data>
+  <data name="Group_EmptyHint" xml:space="preserve"><value>Drag desktop shortcuts or files here</value></data>
+  <data name="Group_RemoveItem" xml:space="preserve"><value>Remove from group</value></data>
+  <data name="Group_Expand" xml:space="preserve"><value>Expand</value></data>
+  <data name="Group_CollapseCapsule" xml:space="preserve"><value>Collapse to horizontal capsule</value></data>
+  <data name="Group_CollapseVertical" xml:space="preserve"><value>Collapse to vertical icon</value></data>
+  <data name="Group_CollapseIcon" xml:space="preserve"><value>Collapse to icon only</value></data>
+  <data name="Group_Delete" xml:space="preserve"><value>Delete group</value></data>
+  <data name="Create_Title" xml:space="preserve"><value>New group</value></data>
+  <data name="Create_Subtitle" xml:space="preserve"><value>Create a new desktop category group</value></data>
+  <data name="Create_Name" xml:space="preserve"><value>Group name</value></data>
+  <data name="Create_NamePlaceholder" xml:space="preserve"><value>For example: Music, Development, Office</value></data>
+  <data name="Create_SelectIcon" xml:space="preserve"><value>Choose icon</value></data>
+  <data name="Create_SystemIcons" xml:space="preserve"><value>System icons</value></data>
+  <data name="Create_UploadIcon" xml:space="preserve"><value>Upload icon</value></data>
+  <data name="Create_UploadTitle" xml:space="preserve"><value>Upload a custom icon</value></data>
+  <data name="Create_UploadFormats" xml:space="preserve"><value>PNG / JPG / SVG / ICO, up to 5 MB</value></data>
+  <data name="Create_UploadDrop" xml:space="preserve"><value>You can also drop a file here</value></data>
+  <data name="Create_ChooseFile" xml:space="preserve"><value>Choose file</value></data>
+  <data name="Create_Preview" xml:space="preserve"><value>Preview</value></data>
+  <data name="Create_PreviewHint" xml:space="preserve"><value>The group will appear on the desktop in this style</value></data>
+  <data name="Create_DefaultState" xml:space="preserve"><value>Default state</value></data>
+  <data name="Create_ShowDesktop" xml:space="preserve"><value>Show on desktop after creation</value></data>
+  <data name="Create_ShowDesktopHint" xml:space="preserve"><value>The group will appear on the desktop immediately</value></data>
+  <data name="Create_Action" xml:space="preserve"><value>Create group</value></data>
+  <data name="Add_Title" xml:space="preserve"><value>Add to MiniDesk</value></data>
+  <data name="Add_SelectGroup" xml:space="preserve"><value>Choose a group</value></data>
+  <data name="Add_CreateAndAdd" xml:space="preserve"><value>＋ Create a new group and add</value></data>
+  <data name="SnapshotPreview_Title" xml:space="preserve"><value>Snapshot preview</value></data>
+  <data name="SnapshotPreview_Hint" xml:space="preserve"><value>Preview only. Your current layout will not be changed.</value></data>
+  <data name="Tray_Open" xml:space="preserve"><value>Open MiniDesk</value></data>
+  <data name="Tray_NewGroup" xml:space="preserve"><value>New group</value></data>
+  <data name="Tray_Exit" xml:space="preserve"><value>Exit</value></data>
+  <data name="Tray_Tooltip" xml:space="preserve"><value>MiniDesk desktop organizer</value></data>
+  <data name="Message_DeleteGroupTitle" xml:space="preserve"><value>Delete group</value></data>
+  <data name="Message_DeleteGroup" xml:space="preserve"><value>Delete group “{0}”?\nNo real files will be deleted.</value></data>
+  <data name="Message_DeleteBlocked" xml:space="preserve"><value>Some desktop items could not be restored. The group was not deleted. Close programs using the shortcut and try again.</value></data>
+  <data name="Message_DeleteBlockedTitle" xml:space="preserve"><value>Unable to delete group</value></data>
+  <data name="Message_RestoreBlocked" xml:space="preserve"><value>Some current desktop items could not be restored. Snapshot restore was canceled to protect your data.</value></data>
+  <data name="Message_RestoreBlockedTitle" xml:space="preserve"><value>Unable to restore snapshot</value></data>
+  <data name="Message_IconSaveFailed" xml:space="preserve"><value>Unable to save icon</value></data>
+  <data name="Message_ItemMissing" xml:space="preserve"><value>The item does not exist or was moved:\n{0}</value></data>
+  <data name="Message_AddFailed" xml:space="preserve"><value>Unable to add to MiniDesk</value></data>
+  <data name="Message_OpenFailed" xml:space="preserve"><value>Unable to open</value></data>
+  <data name="Message_RemoveFailed" xml:space="preserve"><value>The desktop item could not be restored and remains in the group.</value></data>
+  <data name="Message_RemoveFailedTitle" xml:space="preserve"><value>Restore failed</value></data>
+  <data name="Message_StartupFailed" xml:space="preserve"><value>Unable to change startup setting</value></data>
+  <data name="Prompt_RenameGroup" xml:space="preserve"><value>Rename group</value></data>
+  <data name="Prompt_GroupName" xml:space="preserve"><value>Group name</value></data>
+  <data name="Prompt_CreateSnapshot" xml:space="preserve"><value>Create layout snapshot</value></data>
+  <data name="Prompt_SnapshotName" xml:space="preserve"><value>Snapshot name</value></data>
+  <data name="Prompt_DefaultSnapshot" xml:space="preserve"><value>Desktop layout {0}</value></data>
+  <data name="Prompt_RestoreSnapshot" xml:space="preserve"><value>Restore “{0}”?\nThe current layout will be snapshotted first.</value></data>
+  <data name="Prompt_RestoreSnapshotTitle" xml:space="preserve"><value>Restore layout</value></data>
+  <data name="Prompt_DeleteSnapshot" xml:space="preserve"><value>Delete snapshot “{0}”?</value></data>
+  <data name="Prompt_DeleteSnapshotTitle" xml:space="preserve"><value>Delete snapshot</value></data>
+  <data name="Snapshot_BeforeDelete" xml:space="preserve"><value>Before deleting “{0}”</value></data>
+  <data name="Snapshot_BeforeRestore" xml:space="preserve"><value>Before restoring snapshot</value></data>
+  <data name="Default_NewGroup" xml:space="preserve"><value>New group</value></data>
+  <data name="Default_Music" xml:space="preserve"><value>Music</value></data>
+  <data name="Default_Development" xml:space="preserve"><value>Development</value></data>
+  <data name="Default_Communication" xml:space="preserve"><value>Communication</value></data>
+  <data name="Default_Office" xml:space="preserve"><value>Office</value></data>
+  <data name="Default_TemporaryFiles" xml:space="preserve"><value>Temporary files</value></data>
+  <data name="Icon_Browser" xml:space="preserve"><value>Browser</value></data>
+  <data name="Icon_Game" xml:space="preserve"><value>Games</value></data>
+  <data name="Icon_Picture" xml:space="preserve"><value>Pictures</value></data>
+  <data name="Icon_Document" xml:space="preserve"><value>Documents</value></data>
+  <data name="Icon_Download" xml:space="preserve"><value>Downloads</value></data>
+  <data name="Icon_Favorite" xml:space="preserve"><value>Favorites</value></data>
+  <data name="Icon_Custom" xml:space="preserve"><value>Custom</value></data>
+  <data name="Upload_SelectTitle" xml:space="preserve"><value>Choose group icon</value></data>
+  <data name="Upload_Filter" xml:space="preserve"><value>Supported icons|*.png;*.jpg;*.jpeg;*.svg;*.ico|PNG images|*.png|JPG images|*.jpg;*.jpeg|SVG icons|*.svg|ICO icons|*.ico</value></data>
+  <data name="Upload_PreviewFailed" xml:space="preserve"><value>Unable to preview this icon. Try another file.</value></data>
+  <data name="Snapshot_Contains" xml:space="preserve"><value>  ·  Contains </value></data>
+  <data name="Snapshot_GroupsSuffix" xml:space="preserve"><value> groups</value></data>
+  <data name="Snapshot_IconCountFormat" xml:space="preserve"><value>{0} icons</value></data>
+  <data name="Snapshot_IconsSuffix" xml:space="preserve"><value> icons</value></data>
+  <data name="Shell_Add" xml:space="preserve"><value>Add to MiniDesk…</value></data>
+  <data name="Shell_NewGroup" xml:space="preserve"><value>New MiniDesk group</value></data>
+  <data name="Error_IconMissing" xml:space="preserve"><value>The selected icon file does not exist.</value></data>
+  <data name="Error_IconFormat" xml:space="preserve"><value>Only PNG, JPG, SVG, and ICO files are supported.</value></data>
+  <data name="Error_IconSize" xml:space="preserve"><value>The icon must be smaller than 5 MB and cannot be empty.</value></data>
+  <data name="Error_IconCorrupt" xml:space="preserve"><value>The icon is damaged or is not a valid image.</value></data>
+  <data name="Error_ExecutableMissing" xml:space="preserve"><value>Unable to locate the MiniDesk executable.</value></data>
+  <data name="Default_Snapshot" xml:space="preserve"><value>Layout snapshot</value></data>
+  <data name="Installer_FailedTitle" xml:space="preserve"><value>MiniDesk installation failed</value></data>
+  <data name="Installer_MissingPayload" xml:space="preserve"><value>The installer does not contain the MiniDesk application. Download the installer again.</value></data>
+  <data name="Installer_UninstallBlocked" xml:space="preserve"><value>{0} desktop items could not be restored. Uninstall was canceled to protect your data. Close programs using those files and try again.</value></data>
+  <data name="Installer_Startup" xml:space="preserve"><value>Start after Windows sign-in</value></data>
+  <data name="Installer_InstallTitle" xml:space="preserve"><value>Install MiniDesk</value></data>
+  <data name="Installer_Tagline" xml:space="preserve"><value>A tidier desktop for a more efficient day</value></data>
+  <data name="Installer_LocationFormat" xml:space="preserve"><value>Install location: {0}</value></data>
+  <data name="Installer_InstallAction" xml:space="preserve"><value>Install</value></data>
+  <data name="Installer_Installed" xml:space="preserve"><value>MiniDesk was installed successfully.</value></data>
+  <data name="Installer_InstalledTitle" xml:space="preserve"><value>Installation complete</value></data>
+  <data name="Installer_UninstallTitle" xml:space="preserve"><value>Uninstall MiniDesk</value></data>
+  <data name="Installer_KeepData" xml:space="preserve"><value>Keep my layout data (recommended)</value></data>
+  <data name="Installer_DeleteData" xml:space="preserve"><value>Delete all settings and layout snapshots</value></data>
+  <data name="Installer_UninstallSafety" xml:space="preserve"><value>Uninstalling never deletes or moves real desktop files.</value></data>
+  <data name="Installer_UninstallAction" xml:space="preserve"><value>Uninstall</value></data>
+  <data name="Installer_Uninstalled" xml:space="preserve"><value>MiniDesk was uninstalled.</value></data>
+  <data name="Installer_UninstalledTitle" xml:space="preserve"><value>Uninstall complete</value></data>
+</root>

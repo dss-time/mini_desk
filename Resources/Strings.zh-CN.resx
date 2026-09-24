@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Nav_Home" xml:space="preserve"><value>首页</value></data>
+  <data name="Nav_Groups" xml:space="preserve"><value>分组管理</value></data>
+  <data name="Nav_Snapshots" xml:space="preserve"><value>布局快照</value></data>
+  <data name="Nav_Appearance" xml:space="preserve"><value>外观设置</value></data>
+  <data name="Nav_Quick" xml:space="preserve"><value>快捷操作</value></data>
+  <data name="Nav_About" xml:space="preserve"><value>关于</value></data>
+  <data name="Home_Title" xml:space="preserve"><value>欢迎使用 MiniDesk</value></data>
+  <data name="Home_Subtitle" xml:space="preserve"><value>让桌面更整洁，让常用文件随时可达</value></data>
+  <data name="Home_Start" xml:space="preserve"><value>开始使用 MiniDesk  →</value></data>
+  <data name="Home_Organize" xml:space="preserve"><value>分组整理</value></data>
+  <data name="Home_OrganizeDesc" xml:space="preserve"><value>按类型管理桌面文件</value></data>
+  <data name="Home_Collapse" xml:space="preserve"><value>一键收起</value></data>
+  <data name="Home_CollapseDesc" xml:space="preserve"><value>快速隐藏/展开桌面</value></data>
+  <data name="Home_Snapshot" xml:space="preserve"><value>布局快照</value></data>
+  <data name="Home_SnapshotDesc" xml:space="preserve"><value>随时保存桌面布局</value></data>
+  <data name="Home_Appearance" xml:space="preserve"><value>个性外观</value></data>
+  <data name="Home_AppearanceDesc" xml:space="preserve"><value>打造专属桌面风格</value></data>
+  <data name="Groups_Title" xml:space="preserve"><value>分组管理</value></data>
+  <data name="Groups_Subtitle" xml:space="preserve"><value>管理桌面分组、显示状态和关联项目。</value></data>
+  <data name="Groups_New" xml:space="preserve"><value>＋  新建分组</value></data>
+  <data name="Groups_Name" xml:space="preserve"><value>分组名称</value></data>
+  <data name="Groups_Items" xml:space="preserve"><value>包含项目</value></data>
+  <data name="Groups_State" xml:space="preserve"><value>显示状态</value></data>
+  <data name="Groups_AutoCollapse" xml:space="preserve"><value>启用</value></data>
+  <data name="Groups_Actions" xml:space="preserve"><value>操作</value></data>
+  <data name="Groups_Rename" xml:space="preserve"><value>重命名</value></data>
+  <data name="Groups_Delete" xml:space="preserve"><value>删除</value></data>
+  <data name="State_Expanded" xml:space="preserve"><value>已展开</value></data>
+  <data name="State_Collapsed" xml:space="preserve"><value>已收起</value></data>
+  <data name="State_IconOnly" xml:space="preserve"><value>仅图标</value></data>
+  <data name="Snapshots_Title" xml:space="preserve"><value>布局快照</value></data>
+  <data name="Snapshots_Subtitle" xml:space="preserve"><value>随时保存桌面布局；重大变化前也会自动留存恢复点。</value></data>
+  <data name="Snapshots_Create" xml:space="preserve"><value>＋  创建快照</value></data>
+  <data name="Snapshots_Manual" xml:space="preserve"><value>手动创建</value></data>
+  <data name="Snapshots_Restore" xml:space="preserve"><value>恢复此布局</value></data>
+  <data name="Snapshots_Preview" xml:space="preserve"><value>预览快照</value></data>
+  <data name="Snapshots_Delete" xml:space="preserve"><value>删除快照</value></data>
+  <data name="Appearance_Title" xml:space="preserve"><value>外观设置</value></data>
+  <data name="Appearance_Subtitle" xml:space="preserve"><value>自定义分类框在桌面上的显示效果、语言、显示器及兼容性等设置。</value></data>
+  <data name="Appearance_Theme" xml:space="preserve"><value>应用主题</value></data>
+  <data name="Theme_System" xml:space="preserve"><value>跟随系统</value></data>
+  <data name="Theme_SystemDesc" xml:space="preserve"><value>跟随 Windows 系统</value></data>
+  <data name="Theme_Light" xml:space="preserve"><value>浅色</value></data>
+  <data name="Theme_LightDesc" xml:space="preserve"><value>清晰明亮的界面</value></data>
+  <data name="Theme_Dark" xml:space="preserve"><value>深色</value></data>
+  <data name="Theme_DarkDesc" xml:space="preserve"><value>沉浸专注的体验</value></data>
+  <data name="Appearance_CollapseStyle" xml:space="preserve"><value>默认收起样式</value></data>
+  <data name="Collapse_Capsule" xml:space="preserve"><value>横向胶囊</value></data>
+  <data name="Collapse_Vertical" xml:space="preserve"><value>竖向图标</value></data>
+  <data name="Collapse_IconOnly" xml:space="preserve"><value>仅图标</value></data>
+  <data name="Appearance_Parameters" xml:space="preserve"><value>外观参数</value></data>
+  <data name="Appearance_Opacity" xml:space="preserve"><value>面板不透明度</value></data>
+  <data name="Appearance_Radius" xml:space="preserve"><value>圆角大小</value></data>
+  <data name="Appearance_HeaderHeight" xml:space="preserve"><value>标题栏高度</value></data>
+  <data name="Appearance_ShowIcon" xml:space="preserve"><value>收起后显示分类图标</value></data>
+  <data name="Appearance_ShowBadge" xml:space="preserve"><value>显示图标数量角标</value></data>
+  <data name="Appearance_AttachDesktop" xml:space="preserve"><value>挂载到 Windows 桌面层</value></data>
+  <data name="Appearance_Preview" xml:space="preserve"><value>效果预览</value></data>
+  <data name="Appearance_ThemeHint" xml:space="preserve"><value>选择应用的整体外观风格。</value></data>
+  <data name="Appearance_PreviewHint" xml:space="preserve"><value>实时预览分类框在桌面上的显示效果。</value></data>
+  <data name="Appearance_CollapseHint" xml:space="preserve"><value>设置分组框收起时的显示方式。</value></data>
+  <data name="Appearance_Monitors" xml:space="preserve"><value>多显示器设置</value></data>
+  <data name="Appearance_MonitorsHint" xml:space="preserve"><value>管理多显示器环境下的行为。</value></data>
+  <data name="Appearance_DetectMonitors" xml:space="preserve"><value>检测显示器</value></data>
+  <data name="Appearance_RememberMonitorLayout" xml:space="preserve"><value>记住每个显示器的独立布局</value></data>
+  <data name="Appearance_MoveToPrimary" xml:space="preserve"><value>显示器断开时移至主显示器</value></data>
+  <data name="Appearance_RestoreOnReconnect" xml:space="preserve"><value>重新连接时自动恢复布局</value></data>
+  <data name="Appearance_ParametersHint" xml:space="preserve"><value>调整分组框的外观细节。</value></data>
+  <data name="Appearance_LanguageRegion" xml:space="preserve"><value>语言与区域</value></data>
+  <data name="Appearance_LanguageRegionHint" xml:space="preserve"><value>设置应用语言和区域格式。</value></data>
+  <data name="Appearance_FollowSystem" xml:space="preserve"><value>跟随系统</value></data>
+  <data name="Appearance_RuntimeTitle" xml:space="preserve"><value>运行时与架构</value></data>
+  <data name="Appearance_RuntimeDesc" xml:space="preserve"><value>MiniDesk 基于 .NET 10 LTS 构建，支持 x64 和 ARM64，适配全球 Windows 设备。</value></data>
+  <data name="Preview_Expanded" xml:space="preserve"><value>展开状态</value></data>
+  <data name="Preview_Collapsed" xml:space="preserve"><value>收起状态</value></data>
+  <data name="Preview_IconOnly" xml:space="preserve"><value>仅图标</value></data>
+  <data name="Appearance_Documents" xml:space="preserve"><value>文档</value></data>
+  <data name="Appearance_Pictures" xml:space="preserve"><value>图片</value></data>
+  <data name="Appearance_Development" xml:space="preserve"><value>开发</value></data>
+  <data name="Quick_Title" xml:space="preserve"><value>快捷操作</value></data>
+  <data name="Quick_Subtitle" xml:space="preserve"><value>常用运行设置，让桌面整理更高效。</value></data>
+  <data name="Quick_ExpandAll" xml:space="preserve"><value>全部展开</value></data>
+  <data name="Quick_ExpandAllDesc" xml:space="preserve"><value>立即展开所有分组</value></data>
+  <data name="Quick_CollapseAll" xml:space="preserve"><value>全部收起</value></data>
+  <data name="Quick_CollapseAllDesc" xml:space="preserve"><value>一键收起所有分组</value></data>
+  <data name="Quick_OpenConfig" xml:space="preserve"><value>打开配置文件位置</value></data>
+  <data name="Quick_OpenConfigDesc" xml:space="preserve"><value>在文件资源管理器中打开</value></data>
+  <data name="Quick_StartupRecovery" xml:space="preserve"><value>启动与恢复</value></data>
+  <data name="Quick_Startup" xml:space="preserve"><value>登录 Windows 后自动启动 MiniDesk</value></data>
+  <data name="Quick_StartupDesc" xml:space="preserve"><value>开机后自动运行，持续为你整理桌面</value></data>
+  <data name="Quick_ExplorerRecovery" xml:space="preserve"><value>Explorer 重启后自动恢复桌面分组</value></data>
+  <data name="Quick_ExplorerRecoveryDesc" xml:space="preserve"><value>资源管理器重启后自动恢复布局</value></data>
+  <data name="About_Tagline" xml:space="preserve"><value>专注于 Windows 桌面整理的实用工具</value></data>
+  <data name="About_Language" xml:space="preserve"><value>语言</value></data>
+  <data name="Language_ZhCN" xml:space="preserve"><value>简体中文</value></data>
+  <data name="Language_EnUS" xml:space="preserve"><value>English</value></data>
+  <data name="Sidebar_Line1" xml:space="preserve"><value>让桌面更整洁</value></data>
+  <data name="Sidebar_Line2" xml:space="preserve"><value>让常用文件随时可达</value></data>
+  <data name="Common_Cancel" xml:space="preserve"><value>取消</value></data>
+  <data name="Common_Confirm" xml:space="preserve"><value>确定</value></data>
+  <data name="Common_Close" xml:space="preserve"><value>关闭</value></data>
+  <data name="Common_Rename" xml:space="preserve"><value>重命名</value></data>
+  <data name="Common_Delete" xml:space="preserve"><value>删除</value></data>
+  <data name="Common_Settings" xml:space="preserve"><value>打开设置</value></data>
+  <data name="Group_Collapse" xml:space="preserve"><value>收起</value></data>
+  <data name="Group_EmptyHint" xml:space="preserve"><value>把桌面快捷方式或文件拖到这里</value></data>
+  <data name="Group_RemoveItem" xml:space="preserve"><value>从分组移除</value></data>
+  <data name="Group_Expand" xml:space="preserve"><value>展开</value></data>
+  <data name="Group_CollapseCapsule" xml:space="preserve"><value>收起为横向胶囊</value></data>
+  <data name="Group_CollapseVertical" xml:space="preserve"><value>收起为竖向图标</value></data>
+  <data name="Group_CollapseIcon" xml:space="preserve"><value>收起为仅图标</value></data>
+  <data name="Group_Delete" xml:space="preserve"><value>删除分组</value></data>
+  <data name="Create_Title" xml:space="preserve"><value>新建分组</value></data>
+  <data name="Create_Subtitle" xml:space="preserve"><value>创建一个新的桌面分类分组</value></data>
+  <data name="Create_Name" xml:space="preserve"><value>分组名称</value></data>
+  <data name="Create_NamePlaceholder" xml:space="preserve"><value>例如：音乐、开发工具、办公</value></data>
+  <data name="Create_SelectIcon" xml:space="preserve"><value>选择图标</value></data>
+  <data name="Create_SystemIcons" xml:space="preserve"><value>系统图标</value></data>
+  <data name="Create_UploadIcon" xml:space="preserve"><value>上传图标</value></data>
+  <data name="Create_UploadTitle" xml:space="preserve"><value>上传自定义图标</value></data>
+  <data name="Create_UploadFormats" xml:space="preserve"><value>支持 PNG / JPG / SVG / ICO，最大 5 MB</value></data>
+  <data name="Create_UploadDrop" xml:space="preserve"><value>也可以把文件拖放到此区域</value></data>
+  <data name="Create_ChooseFile" xml:space="preserve"><value>选择文件</value></data>
+  <data name="Create_Preview" xml:space="preserve"><value>效果预览</value></data>
+  <data name="Create_PreviewHint" xml:space="preserve"><value>创建后将以此样式显示在桌面上</value></data>
+  <data name="Create_DefaultState" xml:space="preserve"><value>默认状态</value></data>
+  <data name="Create_ShowDesktop" xml:space="preserve"><value>创建后显示在桌面</value></data>
+  <data name="Create_ShowDesktopHint" xml:space="preserve"><value>分组创建后会自动显示在桌面上</value></data>
+  <data name="Create_Action" xml:space="preserve"><value>创建分组</value></data>
+  <data name="Add_Title" xml:space="preserve"><value>放入 MiniDesk</value></data>
+  <data name="Add_SelectGroup" xml:space="preserve"><value>选择分组</value></data>
+  <data name="Add_CreateAndAdd" xml:space="preserve"><value>＋ 创建新分组并放入</value></data>
+  <data name="SnapshotPreview_Title" xml:space="preserve"><value>快照预览</value></data>
+  <data name="SnapshotPreview_Hint" xml:space="preserve"><value>只预览分组关系，不会修改当前布局。</value></data>
+  <data name="Tray_Open" xml:space="preserve"><value>打开 MiniDesk</value></data>
+  <data name="Tray_NewGroup" xml:space="preserve"><value>新建分组</value></data>
+  <data name="Tray_Exit" xml:space="preserve"><value>退出</value></data>
+  <data name="Tray_Tooltip" xml:space="preserve"><value>MiniDesk 桌面分类</value></data>
+  <data name="Message_DeleteGroupTitle" xml:space="preserve"><value>删除分组</value></data>
+  <data name="Message_DeleteGroup" xml:space="preserve"><value>删除分组“{0}”？\n这不会删除任何真实文件。</value></data>
+  <data name="Message_DeleteBlocked" xml:space="preserve"><value>有桌面项目暂时无法恢复，分组未删除。请关闭占用该快捷方式的程序后重试。</value></data>
+  <data name="Message_DeleteBlockedTitle" xml:space="preserve"><value>无法删除分组</value></data>
+  <data name="Message_RestoreBlocked" xml:space="preserve"><value>当前桌面项目未能全部恢复，已取消快照恢复以保护数据。</value></data>
+  <data name="Message_RestoreBlockedTitle" xml:space="preserve"><value>无法恢复快照</value></data>
+  <data name="Message_IconSaveFailed" xml:space="preserve"><value>图标保存失败</value></data>
+  <data name="Message_ItemMissing" xml:space="preserve"><value>项目不存在或已被移动：\n{0}</value></data>
+  <data name="Message_AddFailed" xml:space="preserve"><value>无法放入 MiniDesk</value></data>
+  <data name="Message_OpenFailed" xml:space="preserve"><value>无法打开</value></data>
+  <data name="Message_RemoveFailed" xml:space="preserve"><value>桌面项目暂时无法恢复，未解除分组。</value></data>
+  <data name="Message_RemoveFailedTitle" xml:space="preserve"><value>恢复失败</value></data>
+  <data name="Message_StartupFailed" xml:space="preserve"><value>开机启动设置失败</value></data>
+  <data name="Prompt_RenameGroup" xml:space="preserve"><value>重命名分组</value></data>
+  <data name="Prompt_GroupName" xml:space="preserve"><value>分组名称</value></data>
+  <data name="Prompt_CreateSnapshot" xml:space="preserve"><value>创建布局快照</value></data>
+  <data name="Prompt_SnapshotName" xml:space="preserve"><value>快照名称</value></data>
+  <data name="Prompt_DefaultSnapshot" xml:space="preserve"><value>桌面布局 {0}</value></data>
+  <data name="Prompt_RestoreSnapshot" xml:space="preserve"><value>恢复“{0}”？\n当前布局会先自动创建快照。</value></data>
+  <data name="Prompt_RestoreSnapshotTitle" xml:space="preserve"><value>恢复布局</value></data>
+  <data name="Prompt_DeleteSnapshot" xml:space="preserve"><value>删除快照“{0}”？</value></data>
+  <data name="Prompt_DeleteSnapshotTitle" xml:space="preserve"><value>删除快照</value></data>
+  <data name="Snapshot_BeforeDelete" xml:space="preserve"><value>删除“{0}”前</value></data>
+  <data name="Snapshot_BeforeRestore" xml:space="preserve"><value>恢复快照前</value></data>
+  <data name="Default_NewGroup" xml:space="preserve"><value>新分组</value></data>
+  <data name="Default_Music" xml:space="preserve"><value>音乐</value></data>
+  <data name="Default_Development" xml:space="preserve"><value>开发工具</value></data>
+  <data name="Default_Communication" xml:space="preserve"><value>通讯</value></data>
+  <data name="Default_Office" xml:space="preserve"><value>办公</value></data>
+  <data name="Default_TemporaryFiles" xml:space="preserve"><value>临时文件</value></data>
+  <data name="Icon_Browser" xml:space="preserve"><value>浏览器</value></data>
+  <data name="Icon_Game" xml:space="preserve"><value>游戏</value></data>
+  <data name="Icon_Picture" xml:space="preserve"><value>图片</value></data>
+  <data name="Icon_Document" xml:space="preserve"><value>文档</value></data>
+  <data name="Icon_Download" xml:space="preserve"><value>下载</value></data>
+  <data name="Icon_Favorite" xml:space="preserve"><value>收藏</value></data>
+  <data name="Icon_Custom" xml:space="preserve"><value>自定义</value></data>
+  <data name="Upload_SelectTitle" xml:space="preserve"><value>选择分组图标</value></data>
+  <data name="Upload_Filter" xml:space="preserve"><value>支持的图标|*.png;*.jpg;*.jpeg;*.svg;*.ico|PNG 图片|*.png|JPG 图片|*.jpg;*.jpeg|SVG 图标|*.svg|ICO 图标|*.ico</value></data>
+  <data name="Upload_PreviewFailed" xml:space="preserve"><value>无法生成该图标的预览，请尝试其他文件。</value></data>
+  <data name="Snapshot_Contains" xml:space="preserve"><value>  ·  包含 </value></data>
+  <data name="Snapshot_GroupsSuffix" xml:space="preserve"><value> 个分组</value></data>
+  <data name="Snapshot_IconCountFormat" xml:space="preserve"><value>{0} 个图标</value></data>
+  <data name="Snapshot_IconsSuffix" xml:space="preserve"><value> 个图标</value></data>
+  <data name="Shell_Add" xml:space="preserve"><value>放入 MiniDesk…</value></data>
+  <data name="Shell_NewGroup" xml:space="preserve"><value>新建 MiniDesk 分组</value></data>
+  <data name="Error_IconMissing" xml:space="preserve"><value>选择的图标文件不存在。</value></data>
+  <data name="Error_IconFormat" xml:space="preserve"><value>仅支持 PNG、JPG、SVG 和 ICO 格式。</value></data>
+  <data name="Error_IconSize" xml:space="preserve"><value>图标文件必须小于 5 MB，且内容不能为空。</value></data>
+  <data name="Error_IconCorrupt" xml:space="preserve"><value>图标文件已损坏或不是有效的图片。</value></data>
+  <data name="Error_ExecutableMissing" xml:space="preserve"><value>无法定位 MiniDesk 可执行文件。</value></data>
+  <data name="Default_Snapshot" xml:space="preserve"><value>布局快照</value></data>
+  <data name="Installer_FailedTitle" xml:space="preserve"><value>MiniDesk 安装失败</value></data>
+  <data name="Installer_MissingPayload" xml:space="preserve"><value>安装包内缺少 MiniDesk 主程序。请重新下载安装包。</value></data>
+  <data name="Installer_UninstallBlocked" xml:space="preserve"><value>有 {0} 个桌面项目无法恢复，已取消卸载以保护数据。请关闭占用文件的程序后重试。</value></data>
+  <data name="Installer_Startup" xml:space="preserve"><value>登录 Windows 后自动启动</value></data>
+  <data name="Installer_InstallTitle" xml:space="preserve"><value>安装 MiniDesk</value></data>
+  <data name="Installer_Tagline" xml:space="preserve"><value>让桌面更整洁，让生活更高效</value></data>
+  <data name="Installer_LocationFormat" xml:space="preserve"><value>安装位置：{0}</value></data>
+  <data name="Installer_InstallAction" xml:space="preserve"><value>安装</value></data>
+  <data name="Installer_Installed" xml:space="preserve"><value>MiniDesk 已安装完成。</value></data>
+  <data name="Installer_InstalledTitle" xml:space="preserve"><value>安装完成</value></data>
+  <data name="Installer_UninstallTitle" xml:space="preserve"><value>卸载 MiniDesk</value></data>
+  <data name="Installer_KeepData" xml:space="preserve"><value>保留我的布局数据（推荐）</value></data>
+  <data name="Installer_DeleteData" xml:space="preserve"><value>删除全部配置与布局快照</value></data>
+  <data name="Installer_UninstallSafety" xml:space="preserve"><value>卸载不会删除或移动任何桌面真实文件。</value></data>
+  <data name="Installer_UninstallAction" xml:space="preserve"><value>卸载</value></data>
+  <data name="Installer_Uninstalled" xml:space="preserve"><value>MiniDesk 已卸载。</value></data>
+  <data name="Installer_UninstalledTitle" xml:space="preserve"><value>卸载完成</value></data>
+</root>

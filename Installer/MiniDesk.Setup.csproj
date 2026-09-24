@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationIcon>..\Assets\MiniDesk.ico</ApplicationIcon>
+    <AssemblyName>MiniDesk.Setup</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Payload\MiniDesk.zip" LogicalName="MiniDesk.Payload.zip" />
+    <EmbeddedResource Include="..\Resources\Strings.resx" Link="Resources\Strings.resx" />
+    <EmbeddedResource Include="..\Resources\Strings.zh-CN.resx" Link="Resources\Strings.zh-CN.resx" />
+    <EmbeddedResource Include="..\Resources\Strings.en-US.resx" Link="Resources\Strings.en-US.resx" />
+  </ItemGroup>
+</Project>

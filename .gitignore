@@ -1,0 +1,38 @@
+# .NET / WPF build outputs
+bin/
+obj/
+**/bin/
+**/obj/
+Release/
+Installer/Release/
+Installer/Payload/MiniDesk.zip
+
+# Local test output and captured UI screenshots
+self-test-*.json
+implementation-*.png
+*-comparison*.png
+right-click-picker.png
+design-qa.md
+
+# Local IDE and user data
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.tmp
+*.log
+*.dmp
+*.pdb
+*.msi
+*.exe
+
+# Secrets / local configuration
+.env
+.env.*
+!.env.example
+workspace.json
+user.config
+*.pfx
+*.snk

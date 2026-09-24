@@ -1,0 +1,34 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\MiniDesk.ico</ApplicationIcon>
+    <!-- app.manifest declares PerMonitorV2 once to avoid conflicting DPI sources. -->
+    <NoWarn>$(NoWarn);WFO0003</NoWarn>
+    <AssemblyName>MiniDesk</AssemblyName>
+    <RootNamespace>MiniDesk</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Installer\**\*.cs" />
+    <EmbeddedResource Remove="Installer\**\*" />
+    <None Remove="Installer\**\*" />
+    <Resource Include="Assets\MiniDesk.ico" />
+    <Resource Include="Assets\MiniDesk-256.png" />
+    <Resource Include="Assets\MiniDesk-Light.ico" />
+    <Resource Include="Assets\MiniDesk-Dark.ico" />
+    <Resource Include="Assets\MiniDesk-Mono.ico" />
+    <Resource Include="Assets\MiniDesk-Light.png" />
+    <Resource Include="Assets\MiniDesk-Dark.png" />
+    <Resource Include="Assets\MiniDesk-Mono.png" />
+    <Resource Include="Assets\Home-Folder-Illustration.png" />
+  </ItemGroup>
+
+</Project>
