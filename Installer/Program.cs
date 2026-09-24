@@ -67,7 +67,7 @@ internal static class Program
             else run.DeleteValue(AppName, false);
             using var uninstall = Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Uninstall\MiniDesk");
             uninstall.SetValue("DisplayName", AppName);
-            uninstall.SetValue("DisplayVersion", "1.0.0");
+            uninstall.SetValue("DisplayVersion", Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "1.0.1");
             uninstall.SetValue("Publisher", AppName);
             uninstall.SetValue("DisplayIcon", Path.Combine(InstallDir, "MiniDesk.exe"));
             uninstall.SetValue("InstallLocation", InstallDir);

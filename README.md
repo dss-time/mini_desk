@@ -77,6 +77,14 @@ cd mini_desk
 - MiniDesk 不扫描用户文件内容，不包含自动分类规则引擎。
 - Explorer 恢复、多显示器与 Per-Monitor DPI 行为依赖 Windows Shell 和显示器驱动；欢迎提交问题时附上 Windows 版本、缩放比例和复现步骤。
 
+### 更新与语言设置
+
+更新前请从托盘菜单选择“退出”，再运行新版。便携版更换目录后，请更新桌面快捷方式；若已开启开机启动，在新版里关闭后重新开启一次以更新路径。
+
+在“外观设置 → 语言与区域 → 应用语言”中选择简体中文或 English，界面立即切换并保存。“区域格式”独立控制日期和数字格式，不改变界面语言。
+
+最新修复说明见 [v1.0.1](Docs/Releases/v1.0.1.md)。
+
 ## English
 
 ### Build and run
@@ -96,6 +104,8 @@ Run `Release\portable-net10-win-x64\MiniDesk.exe` on x64 or `Release\portable-ne
 To create an installer, run `.\build-installer.ps1 -Runtime win-x64` or `-Runtime win-arm64`. The installer can create Start Menu/Desktop shortcuts and configure startup. Uninstall offers to keep or delete MiniDesk configuration; it does not delete users' desktop files.
 
 ### Use MiniDesk
+
+Before updating, choose **Exit** from the tray menu. If a portable build moves to a new folder, update your desktop shortcut and toggle startup off and on in the new build to refresh its path. In **Appearance → Language and region**, **App language** changes the UI immediately; **Regional format** independently controls date and number formatting.
 
 - Create or rename groups in **Group Management**. Drag desktop shortcuts, files, or folders into a group, or use the Explorer context-menu command **Put in MiniDesk…** (on Windows 11 it may be under **Show more options**).
 - Drag items within or between groups to arrange them. Drag an item back to the desktop to remove it from its group. Double-click opens it with its existing Windows file association.

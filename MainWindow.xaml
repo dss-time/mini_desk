@@ -153,7 +153,34 @@
                             </StackPanel>
                         </Border>
                         <Border Grid.Row="2" Grid.Column="1" Style="{StaticResource SettingCard}" Margin="0,0,0,10"><StackPanel><TextBlock Text="{DynamicResource Appearance_LanguageRegion}" Style="{StaticResource SectionTitle}" /><TextBlock Text="{DynamicResource Appearance_LanguageRegionHint}" Foreground="{DynamicResource MutedBrush}" FontSize="10" Margin="0,3,0,10" />
-                                <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions><Border Background="{DynamicResource ControlBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="9" Padding="8" Margin="0,0,5,0"><DockPanel><TextBlock Text="&#xE774;" FontFamily="Segoe Fluent Icons" FontSize="17" Foreground="{DynamicResource PrimaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0" /><TextBlock Text="{Binding SelectedItem.Content, ElementName=LanguageSelector}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" /></DockPanel></Border><Border Grid.Column="1" Background="{DynamicResource ControlBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="9" Padding="8" Margin="5,0,0,0"><DockPanel><TextBlock Text="A" FontSize="19" Foreground="{DynamicResource PrimaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0" /><ComboBox x:Name="RegionSelector" SelectionChanged="Region_Changed"><ComboBoxItem Content="{DynamicResource Appearance_FollowSystem}" Tag="system" /><ComboBoxItem Content="{DynamicResource Language_ZhCN}" Tag="zh-CN" /><ComboBoxItem Content="{DynamicResource Language_EnUS}" Tag="en-US" /></ComboBox></DockPanel></Border></Grid>
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                    <Border Background="{DynamicResource ControlBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="9" Padding="8" Margin="0,0,5,0">
+                                        <StackPanel>
+                                            <TextBlock Text="{DynamicResource Appearance_Language}" TextWrapping="Wrap" Margin="0,0,0,8" />
+                                            <DockPanel>
+                                                <TextBlock Text="&#xE774;" FontFamily="Segoe Fluent Icons" FontSize="17" Foreground="{DynamicResource PrimaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                                <ComboBox x:Name="AppLanguageSelector" SelectedIndex="{Binding SelectedIndex, ElementName=LanguageSelector, Mode=TwoWay}" AutomationProperties.Name="{DynamicResource Appearance_Language}">
+                                                    <ComboBoxItem Content="{DynamicResource Language_ZhCN}" Tag="zh-CN" />
+                                                    <ComboBoxItem Content="{DynamicResource Language_EnUS}" Tag="en-US" />
+                                                </ComboBox>
+                                            </DockPanel>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Grid.Column="1" Background="{DynamicResource ControlBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="9" Padding="8" Margin="5,0,0,0">
+                                        <StackPanel>
+                                            <TextBlock Text="{DynamicResource Appearance_RegionFormat}" TextWrapping="Wrap" Margin="0,0,0,8" />
+                                            <DockPanel>
+                                                <TextBlock Text="A" FontSize="19" Foreground="{DynamicResource PrimaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                                <ComboBox x:Name="RegionSelector" SelectionChanged="Region_Changed" AutomationProperties.Name="{DynamicResource Appearance_RegionFormat}">
+                                                    <ComboBoxItem Content="{DynamicResource Appearance_FollowSystem}" Tag="system" />
+                                                    <ComboBoxItem Content="{DynamicResource Language_ZhCN}" Tag="zh-CN" />
+                                                    <ComboBoxItem Content="{DynamicResource Language_EnUS}" Tag="en-US" />
+                                                </ComboBox>
+                                            </DockPanel>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
                             </StackPanel></Border>
                         <Border Grid.Row="3" Grid.ColumnSpan="2" Style="{StaticResource SettingCard}" Padding="12" Margin="0,0,0,2"><DockPanel><Border Width="38" Height="38" Background="{DynamicResource ControlBrush}" CornerRadius="9" Margin="0,0,12,0"><TextBlock Text="&#xE7F4;" FontFamily="Segoe Fluent Icons" Foreground="{DynamicResource PrimaryBrush}" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border><StackPanel VerticalAlignment="Center"><TextBlock Text="{DynamicResource Appearance_RuntimeTitle}" FontWeight="SemiBold" FontSize="12" /><TextBlock Text="{DynamicResource Appearance_RuntimeDesc}" Foreground="{DynamicResource MutedBrush}" FontSize="10" TextWrapping="Wrap" /></StackPanel><StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center"><Border Background="{DynamicResource ControlBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="16" Padding="12,5" Margin="0,0,8,0"><TextBlock Text=".NET 10 LTS" Foreground="{DynamicResource PrimaryBrush}" FontSize="10" /></Border><Border Background="#EAF8F2" CornerRadius="16" Padding="12,5" Margin="0,0,8,0"><TextBlock Text="x64" Foreground="#188253" FontSize="10" /></Border><Border Background="#EAF8F2" CornerRadius="16" Padding="12,5"><TextBlock Text="ARM64" Foreground="#188253" FontSize="10" /></Border></StackPanel></DockPanel></Border>
                     </Grid>

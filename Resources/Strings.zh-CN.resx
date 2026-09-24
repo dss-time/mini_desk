@@ -211,4 +211,6 @@
   <data name="Installer_UninstallAction" xml:space="preserve"><value>卸载</value></data>
   <data name="Installer_Uninstalled" xml:space="preserve"><value>MiniDesk 已卸载。</value></data>
   <data name="Installer_UninstalledTitle" xml:space="preserve"><value>卸载完成</value></data>
+  <data name="Appearance_Language" xml:space="preserve"><value>应用语言</value></data>
+  <data name="Appearance_RegionFormat" xml:space="preserve"><value>区域格式</value></data>
 </root>

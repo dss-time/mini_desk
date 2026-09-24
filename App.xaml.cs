@@ -92,13 +92,24 @@ public partial class App : System.Windows.Application
         }
     }
 
+    public void RefreshGroupAppearance()
+    {
+        foreach (var window in _groupWindows.Values) window.RefreshAppearanceOnly();
+    }
+
+    public void CommitGroupCornerRadius()
+    {
+        foreach (var window in _groupWindows.Values) window.CommitCornerRadius();
+    }
+
     public void OpenManager()
     {
         if (_manager is null)
         {
             _manager = new MainWindow(Config, SaveAsync, RefreshGroupWindows, DeleteGroupAsync,
                 snapshotService: _snapshotService, createSnapshot: CreateSnapshotAsync, restoreSnapshot: RestoreSnapshotAsync,
-                themeChanged: ApplyTheme);
+                themeChanged: ApplyTheme, refreshAppearance: RefreshGroupAppearance,
+                commitCornerRadius: CommitGroupCornerRadius);
             MainWindow = _manager;
             _manager.Closed += (_, _) => _manager = null;
         }

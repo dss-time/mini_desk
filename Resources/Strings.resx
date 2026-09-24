@@ -193,4 +193,6 @@
   <data name="Installer_UninstallAction" xml:space="preserve"><value>Uninstall</value></data>
   <data name="Installer_Uninstalled" xml:space="preserve"><value>MiniDesk was uninstalled.</value></data>
   <data name="Installer_UninstalledTitle" xml:space="preserve"><value>Uninstall complete</value></data>
+  <data name="Appearance_Language" xml:space="preserve"><value>App language</value></data>
+  <data name="Appearance_RegionFormat" xml:space="preserve"><value>Regional format</value></data>
 </root>

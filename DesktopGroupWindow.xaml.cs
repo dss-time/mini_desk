@@ -32,6 +32,8 @@ public partial class DesktopGroupWindow : Window
     private System.Windows.Point _itemOffset;
     private bool _draggingItem;
     private bool _panelAppearanceApplyPending;
+    private readonly RectangleGeometry _expandedClip = new();
+    private readonly RectangleGeometry _collapsedClip = new();
 
     public bool AllowClose { get; set; }
 
@@ -100,23 +102,7 @@ public partial class DesktopGroupWindow : Window
 
     public void RefreshVisualState()
     {
-        HeaderRow.Height = new GridLength(_config.HeaderHeight);
-        var headerInset = Math.Max(0, (_config.CornerRadius - 24) * 0.65);
-        Header.Margin = new Thickness(headerInset, 0, headerInset, 0);
-        var opacity = Math.Clamp(_config.PanelOpacity, 0d, 1d);
-        var alpha = (byte)Math.Round(opacity * 255d, MidpointRounding.AwayFromZero);
-        var dark = (System.Windows.Application.Current as App)?.Config.ThemeMode == AppThemeMode.Dark ||
-                   (System.Windows.Application.Current as App)?.Config.ThemeMode == AppThemeMode.System &&
-                   System.Windows.Application.Current.Resources["AppBackgroundBrush"] is SolidColorBrush appBrush && appBrush.Color.R < 80;
-        ExpandedCard.Background = new SolidColorBrush(dark
-            ? Color.FromArgb(alpha, 38, 43, 53)
-            : Color.FromArgb(alpha, 245, 249, 255));
-        ExpandedCard.CornerRadius = new CornerRadius(_config.CornerRadius);
-        CollapsedCard.Background = new SolidColorBrush(dark
-            ? Color.FromArgb(alpha, 43, 49, 61)
-            : Color.FromArgb(alpha, 246, 250, 255));
-        CollapsedCard.CornerRadius = new CornerRadius(_config.CornerRadius);
-
+        ApplyAppearanceValues();
         var expanded = _group.State == GroupDisplayState.Expanded;
         ExpandedCard.Visibility = expanded ? Visibility.Visible : Visibility.Collapsed;
         CollapsedCard.Visibility = expanded ? Visibility.Collapsed : Visibility.Visible;
@@ -133,6 +119,38 @@ public partial class DesktopGroupWindow : Window
             DisplayTopologyService.Current.Apply(_group, this);
             SchedulePanelAppearance();
         }
+    }
+
+    public void RefreshAppearanceOnly()
+    {
+        if (!IsInitialized) return;
+        ApplyAppearanceValues();
+        ApplyContentClip();
+    }
+
+    public void CommitCornerRadius() => ApplyPanelAppearance();
+
+    private void ApplyAppearanceValues()
+    {
+        HeaderRow.Height = new GridLength(_config.HeaderHeight);
+        var headerInset = Math.Max(0, (_config.CornerRadius - 24) * 0.65);
+        Header.Margin = new Thickness(headerInset, 0, headerInset, 0);
+        var opacity = Math.Clamp(_config.PanelOpacity, 0d, 1d);
+        var alpha = (byte)Math.Round(opacity * 255d, MidpointRounding.AwayFromZero);
+        var dark = (System.Windows.Application.Current as App)?.Config.ThemeMode == AppThemeMode.Dark ||
+                   (System.Windows.Application.Current as App)?.Config.ThemeMode == AppThemeMode.System &&
+                   System.Windows.Application.Current.Resources["AppBackgroundBrush"] is SolidColorBrush appBrush && appBrush.Color.R < 80;
+        SetSurface(ExpandedCard, dark ? Color.FromRgb(38, 43, 53) : Color.FromRgb(245, 249, 255), alpha);
+        ExpandedCard.CornerRadius = new CornerRadius(_config.CornerRadius);
+        SetSurface(CollapsedCard, dark ? Color.FromRgb(43, 49, 61) : Color.FromRgb(246, 250, 255), alpha);
+        CollapsedCard.CornerRadius = new CornerRadius(_config.CornerRadius);
+    }
+
+    private static void SetSurface(Border surface, Color color, byte alpha)
+    {
+        color.A = alpha;
+        if (surface.Background is SolidColorBrush brush && !brush.IsFrozen) brush.Color = color;
+        else surface.Background = new SolidColorBrush(color);
     }
 
     private void SchedulePanelAppearance()
@@ -157,9 +175,16 @@ public partial class DesktopGroupWindow : Window
     {
         if (element.ActualWidth <= 0 || element.ActualHeight <= 0) return;
         var radius = Math.Clamp(_config.CornerRadius, 0, Math.Min(element.ActualWidth, element.ActualHeight) / 2);
-        element.Clip = radius <= 0
-            ? null
-            : new RectangleGeometry(new Rect(0, 0, element.ActualWidth, element.ActualHeight), radius, radius);
+        if (radius <= 0)
+        {
+            element.Clip = null;
+            return;
+        }
+        var geometry = ReferenceEquals(element, ExpandedCard) ? _expandedClip : _collapsedClip;
+        geometry.Rect = new Rect(0, 0, element.ActualWidth, element.ActualHeight);
+        geometry.RadiusX = radius;
+        geometry.RadiusY = radius;
+        if (!ReferenceEquals(element.Clip, geometry)) element.Clip = geometry;
     }
 
     private void ApplyPanelAppearance()

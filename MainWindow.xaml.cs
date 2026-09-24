@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using MiniDesk.Models;
@@ -21,15 +22,20 @@ public partial class MainWindow : Window
     private readonly Func<string, bool, Task<LayoutSnapshot>>? _createSnapshot;
     private readonly Func<LayoutSnapshot, Task>? _restoreSnapshot;
     private readonly Action<AppThemeMode>? _themeChanged;
+    private readonly Action _refreshAppearance;
+    private readonly Action _commitCornerRadius;
     private readonly GroupIconStorageService _groupIconStorage = new();
     private CancellationTokenSource? _appearanceSave;
     private int _previewMode;
     private string? _previewWallpaperPath;
+    private bool _radiusThumbDragging;
+    private readonly RectangleGeometry _previewClip = new();
 
     public MainWindow(WorkspaceConfig config, Func<Task> save, Action refreshWindows, Func<CategoryGroup, Task> delete,
         Func<CategoryGroup, bool>? confirmDelete = null, SnapshotService? snapshotService = null,
         Func<string, bool, Task<LayoutSnapshot>>? createSnapshot = null,
-        Func<LayoutSnapshot, Task>? restoreSnapshot = null, Action<AppThemeMode>? themeChanged = null)
+        Func<LayoutSnapshot, Task>? restoreSnapshot = null, Action<AppThemeMode>? themeChanged = null,
+        Action? refreshAppearance = null, Action? commitCornerRadius = null)
     {
         InitializeComponent();
         _config = config;
@@ -43,6 +49,20 @@ public partial class MainWindow : Window
         _createSnapshot = createSnapshot;
         _restoreSnapshot = restoreSnapshot;
         _themeChanged = themeChanged;
+        _refreshAppearance = refreshAppearance ?? refreshWindows;
+        _commitCornerRadius = commitCornerRadius ?? refreshWindows;
+        RadiusSlider.AddHandler(Thumb.DragStartedEvent,
+            new DragStartedEventHandler((_, _) => _radiusThumbDragging = true));
+        RadiusSlider.AddHandler(Thumb.DragCompletedEvent, new DragCompletedEventHandler((_, _) =>
+        {
+            _radiusThumbDragging = false;
+            _commitCornerRadius();
+        }));
+        RadiusSlider.PreviewMouseLeftButtonUp += (_, _) =>
+        {
+            if (!_radiusThumbDragging) _commitCornerRadius();
+        };
+        RadiusSlider.PreviewKeyUp += (_, _) => _commitCornerRadius();
         DataContext = config;
         GroupList.ItemsSource = config.Groups;
         MonitorList.ItemsSource = DisplayTopologyService.Current.Monitors;
@@ -324,12 +344,24 @@ public partial class MainWindow : Window
         radius = Math.Min(radius, Math.Min(PreviewPanel.Width, PreviewPanel.Height) / 2);
         PreviewPanel.CornerRadius = new CornerRadius(radius);
         PreviewSurface.CornerRadius = new CornerRadius(radius);
-        PreviewSurface.Background = new SolidColorBrush(Color.FromArgb(alpha, fill.R, fill.G, fill.B));
+        var previewColor = Color.FromArgb(alpha, fill.R, fill.G, fill.B);
+        if (PreviewSurface.Background is SolidColorBrush previewBrush && !previewBrush.IsFrozen)
+            previewBrush.Color = previewColor;
+        else
+            PreviewSurface.Background = new SolidColorBrush(previewColor);
         PreviewSurface.Opacity = 1;
         PreviewPanel.BorderBrush = new SolidColorBrush(_previewMode == 0
             ? Color.FromArgb(0xAF, 255, 255, 255)
             : Color.FromArgb(0xBF, 255, 255, 255));
-        PreviewPanel.Clip = radius <= 0 ? null : new RectangleGeometry(new Rect(0, 0, PreviewPanel.Width, PreviewPanel.Height), radius, radius);
+        if (radius <= 0)
+            PreviewPanel.Clip = null;
+        else
+        {
+            _previewClip.Rect = new Rect(0, 0, PreviewPanel.Width, PreviewPanel.Height);
+            _previewClip.RadiusX = radius;
+            _previewClip.RadiusY = radius;
+            if (!ReferenceEquals(PreviewPanel.Clip, _previewClip)) PreviewPanel.Clip = _previewClip;
+        }
     }
 
     private void StartupAppearanceChanged(object sender, RoutedEventArgs e)
@@ -496,9 +528,19 @@ public partial class MainWindow : Window
         if (ReferenceEquals(sender, OpacitySlider)) _config.PanelOpacity = OpacitySlider.Value;
         else if (ReferenceEquals(sender, RadiusSlider)) _config.CornerRadius = RadiusSlider.Value;
         else if (ReferenceEquals(sender, HeaderSlider)) _config.HeaderHeight = HeaderSlider.Value;
-        _refreshWindows();
-        RefreshAppearancePreviewSample();
-        SetPreviewMode(_previewMode);
+        if (sender is Slider)
+        {
+            // Keep the preview responsive and update only the visual properties that
+            // changed; rebuilding group layouts while dragging causes icon flicker.
+            RefreshAppearancePreview();
+            _refreshAppearance();
+        }
+        else
+        {
+            _refreshWindows();
+            RefreshAppearancePreviewSample();
+            SetPreviewMode(_previewMode);
+        }
         DebounceSaveAppearance();
     }
 

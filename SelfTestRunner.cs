@@ -153,6 +153,10 @@ public static class SelfTestRunner
             Assert(window.PreviewPanel.Width == 220 && window.PreviewPanel.Height == 62 && window.PreviewCollapsedName.Text == group.Name,
                 "横向胶囊预览未复用实际分组尺寸或分组名称");
             SaveVisual(window, Path.Combine(Environment.CurrentDirectory, "implementation-preview-collapsed-parity.png"));
+            window.RadiusSlider.Value = 25;
+            await Idle();
+            Assert(Math.Abs(config.CornerRadius - 25) < 0.1 && Math.Abs(window.PreviewPanel.CornerRadius.TopLeft - 25) < 0.1,
+                "收起状态预览未在拖动圆角滑块时同步更新");
             window.VerticalStyle.IsChecked = true; await Idle();
             Assert(window.PreviewPanel.Width == 94 && window.PreviewPanel.Height == 126,
                 "竖向图标预览尺寸与实际桌面分组不一致");
@@ -274,6 +278,27 @@ public static class SelfTestRunner
             Assert(Math.Abs(window.Width - 94) < 0.1 && Math.Abs(window.Height - 126) < 0.1, "竖向收起样式尺寸错误");
             Assert(window.CollapsedCard.Clip is RectangleGeometry collapsedClip && Math.Abs(collapsedClip.RadiusX - 47) < 0.1,
                 "最大圆角未裁剪收起组件的最外层四角");
+            var rowsBeforeAppearanceDrag = window.CollapsedLayout.RowDefinitions.Count;
+            var columnsBeforeAppearanceDrag = window.CollapsedLayout.ColumnDefinitions.Count;
+            var widthBeforeAppearanceDrag = window.Width;
+            var heightBeforeAppearanceDrag = window.Height;
+            config.PanelOpacity = 0.59;
+            config.CornerRadius = 33;
+            window.RefreshAppearanceOnly();
+            Assert(window.CollapsedCard.Visibility == Visibility.Visible && window.ExpandedCard.Visibility == Visibility.Collapsed &&
+                   window.CollapsedLayout.RowDefinitions.Count == rowsBeforeAppearanceDrag &&
+                   window.CollapsedLayout.ColumnDefinitions.Count == columnsBeforeAppearanceDrag &&
+                   Math.Abs(window.Width - widthBeforeAppearanceDrag) < 0.1 && Math.Abs(window.Height - heightBeforeAppearanceDrag) < 0.1,
+                "滑块实时外观刷新重建了收起布局或切换了图标容器");
+            Assert(window.CollapsedCard.Background is SolidColorBrush liveOpacity && liveOpacity.Color.A == 150 &&
+                   Math.Abs(window.CollapsedCard.CornerRadius.TopLeft - 33) < 0.1 &&
+                   window.CollapsedCard.Clip is RectangleGeometry liveClip && Math.Abs(liveClip.RadiusX - 33) < 0.1,
+                "滑块实时外观刷新未同步应用透明度和圆角");
+            window.CommitCornerRadius();
+            config.CornerRadius = 100;
+            window.RefreshAppearanceOnly();
+            window.CommitCornerRadius();
+            await Idle();
             var collapsedLeft = group.Left;
             var collapsedTop = group.Top;
             window.MoveCollapsedTo(collapsedLeft + 31, collapsedTop + 24);
@@ -499,12 +524,34 @@ public static class SelfTestRunner
             var localization = LocalizationService.Current;
             localization.SetCulture("en-US");
             Assert(localization.Get("Nav_Home") == "Home" && CultureInfo.CurrentCulture.Name == "en-US", "English 资源或 Culture 未生效");
-            var englishWindow = new MainWindow(new WorkspaceConfig { Language = "en-US" }, () => Task.CompletedTask, () => { }, _ => Task.CompletedTask);
+            var languageConfig = new WorkspaceConfig { Language = "en-US" };
+            var languageSaves = 0;
+            var englishWindow = new MainWindow(languageConfig, () => { languageSaves++; return Task.CompletedTask; }, () => { }, _ => Task.CompletedTask);
             englishWindow.Show();
             Invoke(englishWindow.AppearanceNav);
             await Idle();
             Assert(englishWindow.AppearancePage.Visibility == Visibility.Visible && englishWindow.LanguageSelector.SelectedIndex == 1,
                 "英文外观页面切换失败");
+            Assert(englishWindow.AppLanguageSelector.SelectedIndex == 1, "语言区域下拉框未同步初始语言");
+            englishWindow.AppLanguageSelector.SelectedIndex = 0;
+            await Idle();
+            Assert(languageConfig.Language == "zh-CN" && englishWindow.LanguageSelector.SelectedIndex == 0 &&
+                   ((StackPanel)englishWindow.HomeNav.Content).Children.OfType<TextBlock>().Last().Text == "首页" && languageSaves > 0,
+                "语言区域切换中文未刷新界面或保存设置");
+            englishWindow.AppLanguageSelector.SelectedIndex = 1;
+            await Idle();
+            Assert(languageConfig.Language == "en-US" && englishWindow.LanguageSelector.SelectedIndex == 1 &&
+                   ((StackPanel)englishWindow.HomeNav.Content).Children.OfType<TextBlock>().Last().Text == "Home",
+                "语言区域切换英文未刷新界面");
+            englishWindow.RegionSelector.SelectedIndex = 1;
+            await Idle();
+            Assert(languageConfig.Language == "en-US" && localization.FormatCulture.Name == "zh-CN" && localization.Culture.Name == "en-US",
+                "区域格式错误地修改了应用语言");
+            englishWindow.LanguageSelector.SelectedIndex = 0;
+            await Idle();
+            Assert(englishWindow.AppLanguageSelector.SelectedIndex == 0, "顶部语言切换未同步语言区域选项");
+            englishWindow.LanguageSelector.SelectedIndex = 1;
+            await Idle();
             Assert(englishWindow.RefreshMonitorsButton.ActualWidth + 0.5 >= englishWindow.RefreshMonitorsButton.DesiredSize.Width,
                 "英文显示器操作按钮宽度不足，可能会裁切文案");
             SaveVisual(englishWindow, Path.Combine(Environment.CurrentDirectory, "implementation-appearance-english.png"));
