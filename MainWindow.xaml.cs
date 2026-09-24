@@ -1,7 +1,10 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using MiniDesk.Models;
 using MiniDesk.Services;
 
@@ -20,6 +23,8 @@ public partial class MainWindow : Window
     private readonly Action<AppThemeMode>? _themeChanged;
     private readonly GroupIconStorageService _groupIconStorage = new();
     private CancellationTokenSource? _appearanceSave;
+    private int _previewMode;
+    private string? _previewWallpaperPath;
 
     public MainWindow(WorkspaceConfig config, Func<Task> save, Action refreshWindows, Func<CategoryGroup, Task> delete,
         Func<CategoryGroup, bool>? confirmDelete = null, SnapshotService? snapshotService = null,
@@ -55,6 +60,14 @@ public partial class MainWindow : Window
             StartupCheck.IsChecked = StartupService.IsEnabled;
             SetCollapseStyleRadio();
             SetThemeRadio();
+            RefreshAppearancePreviewSample();
+            var firstGroupState = GetPreviewGroup()?.State ?? GroupDisplayState.Expanded;
+            SetPreviewMode(firstGroupState switch
+            {
+                GroupDisplayState.Collapsed => 1,
+                GroupDisplayState.Minimized => 2,
+                _ => 0
+            });
             LanguageSelector.SelectedIndex = string.Equals(_config.Language, "en-US", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
             RegionSelector.SelectedIndex = _config.RegionCulture switch { "zh-CN" => 1, "en-US" => 2, _ => 0 };
             ShowPage("Home");
@@ -66,6 +79,8 @@ public partial class MainWindow : Window
         GroupList.Items.Refresh();
         SetCollapseStyleRadio();
         SetThemeRadio();
+        RefreshAppearancePreviewSample();
+        SetPreviewMode(_previewMode);
     }
 
     private async void Language_Changed(object sender, SelectionChangedEventArgs e)
@@ -102,6 +117,18 @@ public partial class MainWindow : Window
         foreach (var button in new[] { HomeNav, GroupsNav, SnapshotsNav, AppearanceNav, QuickNav, AboutNav })
             button.SetResourceReference(Control.BackgroundProperty, Equals(button.Tag, page) ? "SelectedBrush" : "SidebarBrush");
         if (page == "Snapshots") _ = ReloadSnapshotsAsync();
+        if (page == "Appearance")
+        {
+            RefreshPreviewWallpaper();
+            RefreshAppearancePreviewSample();
+            var state = GetPreviewGroup()?.State ?? GroupDisplayState.Expanded;
+            SetPreviewMode(state switch
+            {
+                GroupDisplayState.Collapsed => 1,
+                GroupDisplayState.Minimized => 2,
+                _ => 0
+            });
+        }
     }
 
     private void GoGroups_Click(object sender, RoutedEventArgs e) => ShowPage("Groups");
@@ -118,8 +145,29 @@ public partial class MainWindow : Window
 
     private void SetPreviewMode(int mode)
     {
-        PreviewPanel.Width = mode == 2 ? 50 : 260;
-        PreviewPanel.Height = mode == 0 ? 104 : mode == 1 ? 42 : 50;
+        _previewMode = Math.Clamp(mode, 0, 2);
+        mode = _previewMode;
+        if (mode == 0)
+        {
+            PreviewPanel.Width = 260;
+            PreviewPanel.Height = 104;
+        }
+        else if (mode == 1)
+        {
+            var style = GetPreviewCollapseStyle();
+            (PreviewPanel.Width, PreviewPanel.Height) = style switch
+            {
+                CollapseStyle.VerticalIcon => (94, 126),
+                CollapseStyle.IconOnly => (64, 64),
+                _ => (220, 62)
+            };
+            ApplyPreviewCollapsedLayout(style);
+        }
+        else
+        {
+            PreviewPanel.Width = 64;
+            PreviewPanel.Height = 64;
+        }
         PreviewExpandedContents.Margin = mode == 0 ? new Thickness(12) : new Thickness(4);
         PreviewExpandedContents.Visibility = mode == 0 ? Visibility.Visible : Visibility.Collapsed;
         PreviewCollapsedContent.Visibility = mode == 1 ? Visibility.Visible : Visibility.Collapsed;
@@ -127,6 +175,161 @@ public partial class MainWindow : Window
         PreviewExpandedButton.SetResourceReference(StyleProperty, mode == 0 ? "PrimaryButton" : "SecondaryButton");
         PreviewCollapsedButton.SetResourceReference(StyleProperty, mode == 1 ? "PrimaryButton" : "SecondaryButton");
         PreviewIconOnlyButton.SetResourceReference(StyleProperty, mode == 2 ? "PrimaryButton" : "SecondaryButton");
+        RefreshAppearancePreview();
+    }
+
+    private CategoryGroup? GetPreviewGroup()
+    {
+        var groups = _config.Groups.Where(group => group.IsEnabled).ToList();
+        if (groups.Count == 0) groups = _config.Groups.ToList();
+        var representativeState = groups.GroupBy(group => group.State)
+            .OrderByDescending(stateGroup => stateGroup.Count())
+            .Select(stateGroup => (GroupDisplayState?)stateGroup.Key)
+            .FirstOrDefault();
+        return representativeState is null ? null : groups.FirstOrDefault(group => group.State == representativeState.Value);
+    }
+
+    private CollapseStyle GetPreviewCollapseStyle() => GetPreviewGroup()?.CollapseStyle ??
+        (VerticalStyle.IsChecked == true ? CollapseStyle.VerticalIcon : IconStyle.IsChecked == true ? CollapseStyle.IconOnly : CollapseStyle.HorizontalCapsule);
+
+    private void ApplyPreviewCollapsedLayout(CollapseStyle style)
+    {
+        PreviewCollapsedLayout.ColumnDefinitions.Clear();
+        PreviewCollapsedLayout.RowDefinitions.Clear();
+        PreviewCollapsedLayout.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+        Grid.SetRow(PreviewCollapsedIcon, 0); Grid.SetRow(PreviewCollapsedName, 0); Grid.SetRow(PreviewCollapsedBadge, 0);
+        PreviewCollapsedName.Visibility = Visibility.Visible;
+        PreviewCollapsedBadge.Visibility = _config.ShowBadge ? Visibility.Visible : Visibility.Collapsed;
+        PreviewCollapsedIcon.Visibility = _config.ShowCollapsedIcon ? Visibility.Visible : Visibility.Collapsed;
+        PreviewCollapsedIcon.Margin = new Thickness(0);
+        PreviewCollapsedName.Margin = new Thickness(11, 0, 8, 0);
+        PreviewCollapsedName.HorizontalAlignment = HorizontalAlignment.Stretch;
+        PreviewCollapsedBadge.HorizontalAlignment = HorizontalAlignment.Stretch;
+
+        if (style == CollapseStyle.HorizontalCapsule)
+        {
+            PreviewCollapsedLayout.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            PreviewCollapsedLayout.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            PreviewCollapsedLayout.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            Grid.SetColumn(PreviewCollapsedIcon, 0); Grid.SetColumn(PreviewCollapsedName, 1); Grid.SetColumn(PreviewCollapsedBadge, 2);
+        }
+        else if (style == CollapseStyle.VerticalIcon)
+        {
+            PreviewCollapsedLayout.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            PreviewCollapsedLayout.RowDefinitions.Clear();
+            for (var i = 0; i < 3; i++) PreviewCollapsedLayout.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            Grid.SetColumn(PreviewCollapsedIcon, 0); Grid.SetColumn(PreviewCollapsedName, 0); Grid.SetColumn(PreviewCollapsedBadge, 0);
+            Grid.SetRow(PreviewCollapsedIcon, 0); Grid.SetRow(PreviewCollapsedName, 1); Grid.SetRow(PreviewCollapsedBadge, 2);
+            PreviewCollapsedIcon.Margin = new Thickness(0, 2, 0, 5);
+            PreviewCollapsedName.Margin = new Thickness(0, 3, 0, 4);
+            PreviewCollapsedName.HorizontalAlignment = HorizontalAlignment.Center;
+            PreviewCollapsedBadge.HorizontalAlignment = HorizontalAlignment.Center;
+        }
+        else
+        {
+            PreviewCollapsedLayout.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            PreviewCollapsedName.Visibility = Visibility.Collapsed;
+            PreviewCollapsedBadge.Visibility = Visibility.Collapsed;
+            Grid.SetColumn(PreviewCollapsedIcon, 0);
+            PreviewCollapsedIcon.HorizontalAlignment = HorizontalAlignment.Center;
+            PreviewCollapsedIcon.VerticalAlignment = VerticalAlignment.Center;
+        }
+    }
+
+    private void RefreshAppearancePreviewSample()
+    {
+        var sample = GetPreviewGroup();
+        var name = sample?.Name ?? LocalizationService.Current.Get("Appearance_Development");
+        var glyph = sample?.Glyph ?? "\uE943";
+        Brush accent = Brushes.DodgerBlue;
+        try { accent = (Brush)new BrushConverter().ConvertFromString(sample?.Accent ?? "#2675F5")!; }
+        catch { }
+        var customIcon = string.IsNullOrWhiteSpace(sample?.IconPath) ? null : GroupIconStorageService.LoadPreview(sample.IconPath);
+        foreach (var icon in new[] { PreviewExpandedIcon, PreviewCollapsedIcon, PreviewOnlyIcon }) icon.Background = accent;
+        foreach (var text in new[] { PreviewExpandedGlyph, PreviewCollapsedGlyph, PreviewOnlyGlyph }) text.Text = glyph;
+        foreach (var image in new[] { PreviewExpandedCustomIcon, PreviewCollapsedCustomIcon, PreviewOnlyCustomIcon }) image.Source = customIcon;
+        PreviewExpandedName.Text = name;
+        PreviewCollapsedName.Text = name;
+        PreviewCollapsedCount.Text = sample?.ItemCount.ToString(LocalizationService.Current.FormatCulture) ?? "0";
+        var items = sample?.Items.Take(4).ToList() ?? [];
+        PreviewItems.ItemsSource = items;
+        PreviewItemsEmptyHint.Visibility = items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void RefreshPreviewWallpaper()
+    {
+        var path = GetDesktopWallpaperPath();
+        if (string.IsNullOrWhiteSpace(path) || string.Equals(path, _previewWallpaperPath, StringComparison.OrdinalIgnoreCase)) return;
+        try
+        {
+            var info = new FileInfo(path);
+            if (!info.Exists || info.Length <= 0 || info.Length > 64 * 1024 * 1024) return;
+            var bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.UriSource = new Uri(path, UriKind.Absolute);
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.DecodePixelWidth = 1024;
+            bitmap.EndInit();
+            bitmap.Freeze();
+            PreviewScene.Background = new ImageBrush(bitmap)
+            {
+                Stretch = Stretch.UniformToFill,
+                AlignmentX = AlignmentX.Center,
+                AlignmentY = AlignmentY.Center
+            };
+            PreviewSceneTint.Visibility = Visibility.Collapsed;
+            PreviewSceneAccent.Visibility = Visibility.Collapsed;
+            _previewWallpaperPath = path;
+        }
+        catch
+        {
+            // Keep the built-in preview scene if the current wallpaper cannot be read locally.
+        }
+    }
+
+    private static string? GetDesktopWallpaperPath()
+    {
+        var buffer = new StringBuilder(32768);
+        return SystemParametersInfo(0x0073, (uint)buffer.Capacity, buffer, 0) &&
+               !string.IsNullOrWhiteSpace(buffer.ToString()) &&
+               !buffer.ToString().StartsWith("\\\\", StringComparison.Ordinal)
+            ? buffer.ToString()
+            : null;
+    }
+
+    [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+    private static extern bool SystemParametersInfo(uint action, uint parameter, StringBuilder value, uint flags);
+
+    private void RefreshAppearancePreview()
+    {
+        if (!IsInitialized) return;
+        var opacity = Math.Clamp(_config.PanelOpacity, 0d, 1d);
+        var alpha = (byte)Math.Round(opacity * 255d, MidpointRounding.AwayFromZero);
+        var dark = Application.Current.Resources["IsDarkTheme"] is true;
+        var collapsedPreview = _previewMode != 0;
+        var scale = 1d;
+        var fill = dark
+            ? collapsedPreview ? Color.FromRgb(43, 49, 61) : Color.FromRgb(38, 43, 53)
+            : collapsedPreview ? Color.FromRgb(246, 250, 255) : Color.FromRgb(245, 249, 255);
+        var radius = Math.Max(0, _config.CornerRadius);
+        if (_previewMode == 0)
+        {
+            var group = GetPreviewGroup();
+            var groupWidth = Math.Max(260, group?.Width ?? 320);
+            var groupHeight = Math.Max(170, group?.Height ?? 210);
+            scale = Math.Min(PreviewPanel.Width / groupWidth, PreviewPanel.Height / groupHeight);
+            radius *= scale;
+        }
+        PreviewExpandedHeader.Height = Math.Max(1, _config.HeaderHeight * scale);
+        radius = Math.Min(radius, Math.Min(PreviewPanel.Width, PreviewPanel.Height) / 2);
+        PreviewPanel.CornerRadius = new CornerRadius(radius);
+        PreviewSurface.CornerRadius = new CornerRadius(radius);
+        PreviewSurface.Background = new SolidColorBrush(Color.FromArgb(alpha, fill.R, fill.G, fill.B));
+        PreviewSurface.Opacity = 1;
+        PreviewPanel.BorderBrush = new SolidColorBrush(_previewMode == 0
+            ? Color.FromArgb(0xAF, 255, 255, 255)
+            : Color.FromArgb(0xBF, 255, 255, 255));
+        PreviewPanel.Clip = radius <= 0 ? null : new RectangleGeometry(new Rect(0, 0, PreviewPanel.Width, PreviewPanel.Height), radius, radius);
     }
 
     private void StartupAppearanceChanged(object sender, RoutedEventArgs e)
@@ -216,11 +419,13 @@ public partial class MainWindow : Window
     {
         if (!IsLoaded || sender is not RadioButton { Tag: string value } || !Enum.TryParse<AppThemeMode>(value, out var mode)) return;
         _themeChanged?.Invoke(mode);
+        RefreshAppearancePreview();
     }
 
     public void RefreshTheme()
     {
         RefreshHomeIllustration();
+        RefreshAppearancePreview();
         ShowPage(VisiblePage());
     }
 
@@ -278,6 +483,8 @@ public partial class MainWindow : Window
         if (!IsLoaded || sender is not RadioButton { Tag: string value } || !Enum.TryParse<CollapseStyle>(value, out var style)) return;
         foreach (var group in _config.Groups) group.CollapseStyle = style;
         _refreshWindows();
+        RefreshAppearancePreviewSample();
+        SetPreviewMode(1);
         DebounceSaveAppearance();
     }
 
@@ -290,6 +497,8 @@ public partial class MainWindow : Window
         else if (ReferenceEquals(sender, RadiusSlider)) _config.CornerRadius = RadiusSlider.Value;
         else if (ReferenceEquals(sender, HeaderSlider)) _config.HeaderHeight = HeaderSlider.Value;
         _refreshWindows();
+        RefreshAppearancePreviewSample();
+        SetPreviewMode(_previewMode);
         DebounceSaveAppearance();
     }
 

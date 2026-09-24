@@ -150,6 +150,15 @@ public static class SelfTestRunner
             Assert(config.RegionCulture == "en-US" && LocalizationService.Current.FormatCulture.Name == "en-US", "区域格式选项未应用英文格式");
             window.RegionSelector.SelectedIndex = 0; await Idle();
             Invoke(window.PreviewCollapsedButton); await Idle(); Assert(window.PreviewCollapsedContent.Visibility == Visibility.Visible, "预览按钮未切换到收起状态");
+            Assert(window.PreviewPanel.Width == 220 && window.PreviewPanel.Height == 62 && window.PreviewCollapsedName.Text == group.Name,
+                "横向胶囊预览未复用实际分组尺寸或分组名称");
+            SaveVisual(window, Path.Combine(Environment.CurrentDirectory, "implementation-preview-collapsed-parity.png"));
+            window.VerticalStyle.IsChecked = true; await Idle();
+            Assert(window.PreviewPanel.Width == 94 && window.PreviewPanel.Height == 126,
+                "竖向图标预览尺寸与实际桌面分组不一致");
+            window.IconStyle.IsChecked = true; await Idle();
+            Assert(window.PreviewPanel.Width == 64 && window.PreviewPanel.Height == 64,
+                "仅图标预览尺寸与实际桌面分组不一致");
             Invoke(window.PreviewIconOnlyButton); await Idle(); Assert(window.PreviewIconOnlyContent.Visibility == Visibility.Visible, "预览按钮未切换到仅图标状态");
             Invoke(window.PreviewExpandedButton); await Idle(); Assert(window.PreviewExpandedContents.Visibility == Visibility.Visible, "预览按钮未切换到展开状态");
             Assert(window.OpacitySlider.Minimum == 0 && window.OpacitySlider.Maximum == 1, "透明度范围不是 0%–100%");
@@ -158,8 +167,9 @@ public static class SelfTestRunner
             window.OpacitySlider.Value = 0.32;
             await Idle();
             Assert(Math.Abs(config.PanelOpacity - 0.32) < 0.001, "32% 透明度中间值未写入配置");
-            Assert(window.PreviewSurface.Opacity is >= 0.31 and <= 0.33 && window.PreviewPanel.Opacity == 1,
-                "预览透明度必须只影响背景填充，不能淡化图标和文字");
+            Assert(window.PreviewSurface.Opacity == 1 && window.PreviewSurface.Background is SolidColorBrush previewFill &&
+                   previewFill.Color.A == 82 && window.PreviewPanel.Opacity == 1,
+                "预览面板必须使用与桌面分类相同的 Alpha 填充，且不能淡化图标和文字");
             SaveVisual(window, Path.Combine(Environment.CurrentDirectory, "implementation-appearance-preview-32.png"));
             Assert(window.RadiusSlider.Minimum == 0 && window.RadiusSlider.Maximum == 100 &&
                    window.RadiusSlider.IsMoveToPointEnabled && window.RadiusSlider.IsSnapToTickEnabled,
@@ -167,6 +177,9 @@ public static class SelfTestRunner
             window.RadiusSlider.Value = 73;
             await Idle();
             Assert(Math.Abs(config.CornerRadius - 73) < 0.001, "圆角滑块中间值未实时写入配置");
+            var previewScale = Math.Min(window.PreviewPanel.Width / Math.Max(260, group.Width), window.PreviewPanel.Height / Math.Max(170, group.Height));
+            Assert(window.PreviewPanel.CornerRadius.TopLeft is >= 0 && Math.Abs(window.PreviewPanel.CornerRadius.TopLeft - Math.Min(73 * previewScale, Math.Min(window.PreviewPanel.Width, window.PreviewPanel.Height) / 2)) < 0.1,
+                "展开预览圆角未按实际分组比例缩放");
             Invoke(window.SnapshotsNav); await Idle(); await Task.Delay(80); Assert(window.SnapshotsPage.Visibility == Visibility.Visible, "布局快照导航不可用");
             SaveVisual(window, Path.Combine(Environment.CurrentDirectory, "implementation-snapshots-window.png"));
             Invoke(window.QuickNav); await Idle(); Assert(window.QuickPage.Visibility == Visibility.Visible, "快捷操作导航不可用");
@@ -207,6 +220,20 @@ public static class SelfTestRunner
             Assert((style & 0x40000000L) == 0, "分类窗口仍被错误改成 WS_CHILD");
             Assert(window.ExpandedCard.Background is SolidColorBrush transparent && transparent.Color.A == 0,
                 "0% 面板透明度未传递到分类窗口");
+            config.PanelOpacity = 0.01;
+            window.RefreshVisualState();
+            Assert(window.ExpandedCard.Background is SolidColorBrush onePercent && onePercent.Color.A == 3,
+                "1% 面板透明度未按线性 Alpha 映射");
+            config.PanelOpacity = 0.5;
+            window.RefreshVisualState();
+            Assert(window.ExpandedCard.Background is SolidColorBrush halfOpacity && halfOpacity.Color.A == 128,
+                "50% 面板透明度未按线性 Alpha 映射");
+            config.PanelOpacity = 0.99;
+            window.RefreshVisualState();
+            Assert(window.ExpandedCard.Background is SolidColorBrush nearOpaque && nearOpaque.Color.A == 252,
+                "99% 面板透明度未按线性 Alpha 映射");
+            config.PanelOpacity = 0;
+            window.RefreshVisualState();
             var roundedProbe = CreateRectRgn(0, 0, 1, 1);
             try { Assert(GetWindowRgn(hwnd, roundedProbe) != 0, "圆角没有应用到 Win32 窗口区域"); }
             finally { DeleteObject(roundedProbe); }
@@ -230,16 +257,11 @@ public static class SelfTestRunner
                 "最大圆角未裁剪展开组件的最外层四角");
             Assert(window.Header.Margin.Left >= 49 && window.Header.Margin.Right >= 49,
                 "最大圆角时标题栏内容没有避让外层圆弧");
-            var maximumRadiusProbe = CreateRectRgn(0, 0, 1, 1);
-            try
-            {
-                Assert(GetWindowRgn(hwnd, maximumRadiusProbe) != 0 &&
-                       !PtInRegion(maximumRadiusProbe, 0, 0) &&
-                       !PtInRegion(maximumRadiusProbe, 0, (int)window.ActualHeight - 1) &&
-                       PtInRegion(maximumRadiusProbe, (int)window.ActualWidth / 2, 0),
-                    "最大圆角没有裁剪桌面 HWND 的外层四角");
-            }
-            finally { DeleteObject(maximumRadiusProbe); }
+            AssertRoundedHwnd(hwnd, "最大圆角没有裁剪桌面 HWND 的外层四角");
+            window.Width += 24;
+            window.Height += 18;
+            await Idle();
+            AssertRoundedHwnd(hwnd, "窗口尺寸变化后没有重新应用桌面 HWND 圆角");
             SaveVisual(window, Path.Combine(Environment.CurrentDirectory, "implementation-rounded-group.png"));
             window.ReattachToDesktop(); await Idle();
             Assert(GetWindow(hwnd, 4) != IntPtr.Zero, "分类窗口没有桌面 owner");
@@ -602,10 +624,37 @@ public static class SelfTestRunner
     private static extern IntPtr GetWindow(IntPtr hwnd, uint command);
     [DllImport("user32.dll")]
     private static extern int GetWindowRgn(IntPtr hwnd, IntPtr region);
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool GetWindowRect(IntPtr hwnd, out NativeRect rect);
     [DllImport("gdi32.dll")]
     private static extern IntPtr CreateRectRgn(int left, int top, int right, int bottom);
     [DllImport("gdi32.dll")]
     private static extern bool PtInRegion(IntPtr region, int x, int y);
     [DllImport("gdi32.dll")]
     private static extern bool DeleteObject(IntPtr obj);
+
+    private static void AssertRoundedHwnd(IntPtr hwnd, string failure)
+    {
+        Assert(GetWindowRect(hwnd, out var bounds), "无法读取桌面分类窗口的物理尺寸");
+        var region = CreateRectRgn(0, 0, 1, 1);
+        try
+        {
+            Assert(GetWindowRgn(hwnd, region) != 0 &&
+                   !PtInRegion(region, 0, 0) &&
+                   !PtInRegion(region, 0, bounds.Height - 1) &&
+                   PtInRegion(region, bounds.Width / 2, 0), failure);
+        }
+        finally { DeleteObject(region); }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeRect
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+        public readonly int Width => Right - Left;
+        public readonly int Height => Bottom - Top;
+    }
 }

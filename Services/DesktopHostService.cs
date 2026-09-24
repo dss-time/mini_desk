@@ -53,17 +53,13 @@ public static class DesktopHostService
             SwpNoActivate | SwpShowWindow);
     }
 
-    public static void ApplyPanelAppearance(Window window, double opacity, bool dark, double cornerRadius)
+    public static void ApplyPanelAppearance(Window window, double cornerRadius)
     {
         var hwnd = new WindowInteropHelper(window).Handle;
         if (hwnd == IntPtr.Zero) return;
-
-        var alpha = (byte)Math.Clamp(Math.Round(opacity * 255), 0, 255);
-        var red = dark ? (byte)38 : (byte)245;
-        var green = dark ? (byte)43 : (byte)249;
-        var blue = dark ? (byte)53 : (byte)255;
-        var gradientColor = ((uint)alpha << 24) | ((uint)blue << 16) | ((uint)green << 8) | red;
-        ApplyAccent(hwnd, alpha == 0 ? AccentState.AccentDisabled : AccentState.AccentEnableAcrylicBlurBehind, gradientColor);
+        // Opacity is rendered by the WPF surface's own per-pixel alpha. Applying
+        // Acrylic here adds a second compositor blend and makes the 0-100 slider
+        // perceptually nonlinear, so keep the HWND responsible only for clipping.
         ApplyRoundedRegion(hwnd, window, cornerRadius);
     }
 
@@ -71,30 +67,6 @@ public static class DesktopHostService
     {
         var progman = FindWindow("Progman", null);
         return progman != IntPtr.Zero ? progman : GetShellWindow();
-    }
-
-    private static void ApplyAccent(IntPtr hwnd, AccentState state, uint gradientColor)
-    {
-        var accent = new AccentPolicy
-        {
-            AccentState = state,
-            AccentFlags = 2,
-            GradientColor = gradientColor
-        };
-        var size = Marshal.SizeOf<AccentPolicy>();
-        var ptr = Marshal.AllocHGlobal(size);
-        try
-        {
-            Marshal.StructureToPtr(accent, ptr, false);
-            var data = new WindowCompositionAttributeData
-            {
-                Attribute = WindowCompositionAttribute.WcaAccentPolicy,
-                SizeOfData = size,
-                Data = ptr
-            };
-            SetWindowCompositionAttribute(hwnd, ref data);
-        }
-        finally { Marshal.FreeHGlobal(ptr); }
     }
 
     private static void ApplyRoundedRegion(IntPtr hwnd, Window window, double cornerRadius)
@@ -117,26 +89,6 @@ public static class DesktopHostService
         if (SetWindowRgn(hwnd, region, true) == 0) DeleteObject(region);
     }
 
-    private enum AccentState { AccentDisabled, AccentEnableGradient, AccentEnableTransparentGradient, AccentEnableBlurBehind, AccentEnableAcrylicBlurBehind }
-    private enum WindowCompositionAttribute { WcaAccentPolicy = 19 }
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct AccentPolicy
-    {
-        public AccentState AccentState;
-        public int AccentFlags;
-        public uint GradientColor;
-        public int AnimationId;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct WindowCompositionAttributeData
-    {
-        public WindowCompositionAttribute Attribute;
-        public IntPtr Data;
-        public int SizeOfData;
-    }
-
     [StructLayout(LayoutKind.Sequential)]
     private struct Rect
     {
@@ -156,5 +108,4 @@ public static class DesktopHostService
     [DllImport("user32.dll", SetLastError = true)] private static extern int SetWindowRgn(IntPtr hwnd, IntPtr region, bool redraw);
     [DllImport("gdi32.dll", SetLastError = true)] private static extern IntPtr CreateRoundRectRgn(int left, int top, int right, int bottom, int widthEllipse, int heightEllipse);
     [DllImport("gdi32.dll", SetLastError = true)] private static extern bool DeleteObject(IntPtr obj);
-    [DllImport("user32.dll")] private static extern int SetWindowCompositionAttribute(IntPtr hwnd, ref WindowCompositionAttributeData data);
 }

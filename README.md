@@ -8,7 +8,9 @@
 
 ### 获取并启动
 
-MiniDesk 目前提供源码构建。请在 Windows 10/11 的 x64 或 ARM64 设备上安装 **.NET 10 SDK**，然后在 PowerShell 中运行：
+在 [GitHub Releases](https://github.com/dss-time/mini_desk/releases/latest) 下载与你的设备架构对应的 `MiniDesk-win-x64.zip` 或 `MiniDesk-win-arm64.zip`，解压后运行 `MiniDesk.exe`。发布包为 .NET 10 自包含版本，不需要单独安装 .NET Runtime。请勿将两个架构的文件混合解压。
+
+如需从源码构建，请在 Windows 10/11 的 x64 或 ARM64 设备上安装 **.NET 10 SDK**，然后在 PowerShell 中运行：
 
 ```powershell
 git clone https://github.com/dss-time/mini_desk.git
@@ -79,7 +81,9 @@ cd mini_desk
 
 ### Build and run
 
-Install the **.NET 10 SDK** on Windows 10/11, then run:
+Download the matching `MiniDesk-win-x64.zip` or `MiniDesk-win-arm64.zip` from [GitHub Releases](https://github.com/dss-time/mini_desk/releases/latest), extract it, and run `MiniDesk.exe`. The release builds are self-contained and do not require a separate .NET Runtime. Do not mix files from different architecture packages.
+
+To build from source, install the **.NET 10 SDK** on Windows 10/11, then run:
 
 ```powershell
 git clone https://github.com/dss-time/mini_desk.git

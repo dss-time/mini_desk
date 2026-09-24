@@ -31,6 +31,7 @@ public partial class DesktopGroupWindow : Window
     private DesktopItem? _movingItem;
     private System.Windows.Point _itemOffset;
     private bool _draggingItem;
+    private bool _panelAppearanceApplyPending;
 
     public bool AllowClose { get; set; }
 
@@ -55,13 +56,17 @@ public partial class DesktopGroupWindow : Window
         {
             if (PresentationSource.FromVisual(this) is HwndSource source)
                 source.AddHook((IntPtr hwnd, int message, IntPtr wParam, IntPtr lParam, ref bool handled) =>
-                    DisplayTopologyService.Current.HandleDpiMessage(this, hwnd, message, wParam, lParam, ref handled));
+                {
+                    var result = DisplayTopologyService.Current.HandleDpiMessage(this, hwnd, message, wParam, lParam, ref handled);
+                    if (message is 0x0005 or 0x02E0) SchedulePanelAppearance(); // WM_SIZE / WM_DPICHANGED
+                    return result;
+                });
             _attached = _config.AttachToDesktop && DesktopHostService.TryAttach(this);
             DisplayTopologyService.Current.Apply(_group, this);
-            ApplyPanelAppearance();
+            SchedulePanelAppearance();
         };
-        Loaded += (_, _) => ApplyContentClip();
-        SizeChanged += (_, _) => ApplyContentClip();
+        Loaded += (_, _) => SchedulePanelAppearance();
+        SizeChanged += (_, _) => SchedulePanelAppearance();
         Closing += (_, e) => { if (!AllowClose) { e.Cancel = true; Hide(); } };
 
         RefreshLocalization();
@@ -98,7 +103,8 @@ public partial class DesktopGroupWindow : Window
         HeaderRow.Height = new GridLength(_config.HeaderHeight);
         var headerInset = Math.Max(0, (_config.CornerRadius - 24) * 0.65);
         Header.Margin = new Thickness(headerInset, 0, headerInset, 0);
-        var alpha = (byte)Math.Clamp(Math.Round(_config.PanelOpacity * 255), 0, 255);
+        var opacity = Math.Clamp(_config.PanelOpacity, 0d, 1d);
+        var alpha = (byte)Math.Round(opacity * 255d, MidpointRounding.AwayFromZero);
         var dark = (System.Windows.Application.Current as App)?.Config.ThemeMode == AppThemeMode.Dark ||
                    (System.Windows.Application.Current as App)?.Config.ThemeMode == AppThemeMode.System &&
                    System.Windows.Application.Current.Resources["AppBackgroundBrush"] is SolidColorBrush appBrush && appBrush.Color.R < 80;
@@ -125,9 +131,20 @@ public partial class DesktopGroupWindow : Window
         if (IsLoaded)
         {
             DisplayTopologyService.Current.Apply(_group, this);
-            ApplyPanelAppearance();
-            Dispatcher.BeginInvoke(ApplyContentClip, System.Windows.Threading.DispatcherPriority.Render);
+            SchedulePanelAppearance();
         }
+    }
+
+    private void SchedulePanelAppearance()
+    {
+        if (!IsLoaded || _panelAppearanceApplyPending) return;
+        _panelAppearanceApplyPending = true;
+        Dispatcher.BeginInvoke(() =>
+        {
+            _panelAppearanceApplyPending = false;
+            ApplyContentClip();
+            ApplyPanelAppearance();
+        }, System.Windows.Threading.DispatcherPriority.Render);
     }
 
     internal void ApplyContentClip()
@@ -147,10 +164,7 @@ public partial class DesktopGroupWindow : Window
 
     private void ApplyPanelAppearance()
     {
-        var dark = (System.Windows.Application.Current as App)?.Config.ThemeMode == AppThemeMode.Dark ||
-                   (System.Windows.Application.Current as App)?.Config.ThemeMode == AppThemeMode.System &&
-                   System.Windows.Application.Current.Resources["AppBackgroundBrush"] is SolidColorBrush appBrush && appBrush.Color.R < 80;
-        DesktopHostService.ApplyPanelAppearance(this, _config.PanelOpacity, dark, _config.CornerRadius);
+        DesktopHostService.ApplyPanelAppearance(this, _config.CornerRadius);
     }
 
     private void ApplyCollapsedStyle(CollapseStyle style)
@@ -298,7 +312,7 @@ public partial class DesktopGroupWindow : Window
         _group.Width = Math.Max(260, _group.Width + e.HorizontalChange);
         _group.Height = Math.Max(170, _group.Height + e.VerticalChange);
         Width = _group.Width; Height = _group.Height;
-        ApplyPanelAppearance();
+        SchedulePanelAppearance();
     }
 
     private async void ResizeThumb_DragCompleted(object sender, DragCompletedEventArgs e)
