@@ -24,6 +24,7 @@ public partial class MainWindow : Window
     private readonly Action<AppThemeMode>? _themeChanged;
     private readonly Action _refreshAppearance;
     private readonly Action _commitCornerRadius;
+    private readonly Func<bool, Task>? _organize;
     private readonly GroupIconStorageService _groupIconStorage = new();
     private CancellationTokenSource? _appearanceSave;
     private int _previewMode;
@@ -35,10 +36,11 @@ public partial class MainWindow : Window
         Func<CategoryGroup, bool>? confirmDelete = null, SnapshotService? snapshotService = null,
         Func<string, bool, Task<LayoutSnapshot>>? createSnapshot = null,
         Func<LayoutSnapshot, Task>? restoreSnapshot = null, Action<AppThemeMode>? themeChanged = null,
-        Action? refreshAppearance = null, Action? commitCornerRadius = null)
+        Action? refreshAppearance = null, Action? commitCornerRadius = null, Func<bool, Task>? organize = null)
     {
         InitializeComponent();
         _config = config;
+        _organize = organize;
         _save = save;
         _refreshWindows = refreshWindows;
         _delete = delete;
@@ -399,6 +401,16 @@ public partial class MainWindow : Window
     }
 
     internal void SetModalOverlay(bool visible) => ModalOverlay.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+
+    private async void Organize_Click(object sender, RoutedEventArgs e)
+    {
+        if (_organize is not null) await _organize(false);
+    }
+
+    private async void UndoOrganization_Click(object sender, RoutedEventArgs e)
+    {
+        if (_organize is not null) await _organize(true);
+    }
 
     private async void RenameGroup_Click(object sender, RoutedEventArgs e)
     {

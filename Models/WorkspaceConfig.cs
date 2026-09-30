@@ -18,6 +18,7 @@ public sealed class WorkspaceConfig : ObservableObject
     private string _regionCulture = "system";
 
     public int Version { get; set; } = 5;
+    public OrganizationBatch? LastOrganization { get; set; }
     public ObservableCollection<CategoryGroup> Groups { get; set; } = [];
     public double PanelOpacity { get => _panelOpacity; set => SetProperty(ref _panelOpacity, value); }
     public double CornerRadius { get => _cornerRadius; set => SetProperty(ref _cornerRadius, value); }

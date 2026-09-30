@@ -143,7 +143,7 @@
   <data name="Tray_Exit" xml:space="preserve"><value>Exit</value></data>
   <data name="Tray_Tooltip" xml:space="preserve"><value>MiniDesk desktop organizer</value></data>
   <data name="Message_DeleteGroupTitle" xml:space="preserve"><value>Delete group</value></data>
-  <data name="Message_DeleteGroup" xml:space="preserve"><value>Delete group “{0}”?\nNo real files will be deleted.</value></data>
+  <data name="Message_DeleteGroup" xml:space="preserve"><value>Delete group “{0}”?&#10;Its items will be returned to the desktop. No real files will be deleted. If any item cannot be restored, the group will be kept.</value></data>
   <data name="Message_DeleteBlocked" xml:space="preserve"><value>Some desktop items could not be restored. The group was not deleted. Close programs using the shortcut and try again.</value></data>
   <data name="Message_DeleteBlockedTitle" xml:space="preserve"><value>Unable to delete group</value></data>
   <data name="Message_RestoreBlocked" xml:space="preserve"><value>Some current desktop items could not be restored. Snapshot restore was canceled to protect your data.</value></data>
@@ -224,4 +224,35 @@
   <data name="Icon_PowerPoint" xml:space="preserve"><value>PPT</value></data>
   <data name="Icon_Pdf" xml:space="preserve"><value>PDF</value></data>
   <data name="Icon_Word" xml:space="preserve"><value>Word</value></data>
+  <data name="Organize_Title" xml:space="preserve"><value>Organize desktop</value></data>
+  <data name="Organize_Subtitle" xml:space="preserve"><value>Preview first. Only ungrouped desktop items are included.</value></data>
+  <data name="Organize_Hint" xml:space="preserve"><value>Unknown items stay on the desktop. Change destinations individually; no real files are deleted.</value></data>
+  <data name="Organize_Desktop" xml:space="preserve"><value>Keep on desktop</value></data>
+  <data name="Organize_Apply" xml:space="preserve"><value>Apply organization</value></data>
+  <data name="Organize_Undo" xml:space="preserve"><value>Undo last organization</value></data>
+  <data name="Organize_Result" xml:space="preserve"><value>Organized {0} items; skipped or failed {1}. You can undo this batch.</value></data>
+  <data name="Organize_UndoResult" xml:space="preserve"><value>Restored {0} items; retained {1} (modified or restoration failed).</value></data>
+  <data name="Organize_Error" xml:space="preserve"><value>Organization was interrupted. Processed items remain tracked and can be undone or retried.\n{0}</value></data>
+  <data name="Organize_Snapshot" xml:space="preserve"><value>Before organizing desktop</value></data>
+  <data name="Organize_Busy" xml:space="preserve"><value>An organization operation is in progress. Please wait.</value></data>
+  <data name="Organize_Video" xml:space="preserve"><value>Videos</value></data>
+  <data name="Organize_Empty" xml:space="preserve"><value>No desktop items to organize.</value></data>
+  <data name="Organize_Count" xml:space="preserve"><value>Organize {0} items · Keep {1} on desktop</value></data>
+  <data name="Organize_Target" xml:space="preserve"><value>Destination</value></data>
+  <data name="Organize_NoUndo" xml:space="preserve"><value>No organization batch to undo.</value></data>
+  <data name="Organize_RetryUndo" xml:space="preserve"><value>Some items could not be restored. Retry Undo before organizing again.</value></data>
+  <data name="Context_Open" xml:space="preserve"><value>Open</value></data>
+  <data name="Context_MoveToGroup" xml:space="preserve"><value>Move to group</value></data>
+  <data name="Context_CreateAndMove" xml:space="preserve"><value>Create group and move…</value></data>
+  <data name="Context_MoveToDesktop" xml:space="preserve"><value>Return to desktop</value></data>
+  <data name="Context_OpenFolder" xml:space="preserve"><value>Open containing folder</value></data>
+  <data name="Context_Properties" xml:space="preserve"><value>Properties</value></data>
+  <data name="Context_CollapseStyle" xml:space="preserve"><value>Collapsed style</value></data>
+  <data name="Context_ChangeIcon" xml:space="preserve"><value>Change icon…</value></data>
+  <data name="Context_ChangeIconHint" xml:space="preserve"><value>Choose an icon for this group. Other settings stay unchanged.</value></data>
+  <data name="Context_LockPosition" xml:space="preserve"><value>Lock position</value></data>
+  <data name="Context_ActionFailedTitle" xml:space="preserve"><value>Action could not be completed</value></data>
+  <data name="Context_ActionFailed" xml:space="preserve"><value>The action could not be completed. Existing items are not deleted.\n{0}</value></data>
+  <data name="Context_GroupFull" xml:space="preserve"><value>This group has no available space. Expand its size or choose another group.</value></data>
+  <data name="Context_GroupDisabled" xml:space="preserve"><value>Enable this group in Group management before moving items into it.</value></data>
 </root>

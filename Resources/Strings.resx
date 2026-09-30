@@ -125,7 +125,7 @@
   <data name="Tray_Exit" xml:space="preserve"><value>Exit</value></data>
   <data name="Tray_Tooltip" xml:space="preserve"><value>MiniDesk desktop organizer</value></data>
   <data name="Message_DeleteGroupTitle" xml:space="preserve"><value>Delete group</value></data>
-  <data name="Message_DeleteGroup" xml:space="preserve"><value>Delete group “{0}”?\nNo real files will be deleted.</value></data>
+  <data name="Message_DeleteGroup" xml:space="preserve"><value>删除分组“{0}”？&#10;其中的项目将恢复到桌面，不会删除真实文件。有项目恢复失败时，将保留这个分组。</value></data>
   <data name="Message_DeleteBlocked" xml:space="preserve"><value>Some desktop items could not be restored. The group was not deleted. Close programs using the shortcut and try again.</value></data>
   <data name="Message_DeleteBlockedTitle" xml:space="preserve"><value>Unable to delete group</value></data>
   <data name="Message_RestoreBlocked" xml:space="preserve"><value>Some current desktop items could not be restored. Snapshot restore was canceled to protect your data.</value></data>
@@ -206,4 +206,35 @@
   <data name="Icon_PowerPoint" xml:space="preserve"><value>PPT</value></data>
   <data name="Icon_Pdf" xml:space="preserve"><value>PDF</value></data>
   <data name="Icon_Word" xml:space="preserve"><value>Word</value></data>
+  <data name="Organize_Title" xml:space="preserve"><value>整理桌面</value></data>
+  <data name="Organize_Subtitle" xml:space="preserve"><value>先预览，再确认。只整理未分组的桌面项目。</value></data>
+  <data name="Organize_Hint" xml:space="preserve"><value>未知项目默认留在桌面。可逐项修改目标分组；真实文件不会被删除。</value></data>
+  <data name="Organize_Desktop" xml:space="preserve"><value>留在桌面</value></data>
+  <data name="Organize_Apply" xml:space="preserve"><value>确认整理</value></data>
+  <data name="Organize_Undo" xml:space="preserve"><value>撤销上次整理</value></data>
+  <data name="Organize_Result" xml:space="preserve"><value>已整理 {0} 项，跳过或失败 {1} 项。可撤销本次整理。</value></data>
+  <data name="Organize_UndoResult" xml:space="preserve"><value>已恢复 {0} 项，保留 {1} 项（已修改或恢复失败）。</value></data>
+  <data name="Organize_Error" xml:space="preserve"><value>整理未完成，已成功处理的项目仍保留记录，可撤销或重试。\n{0}</value></data>
+  <data name="Organize_Snapshot" xml:space="preserve"><value>整理桌面前</value></data>
+  <data name="Organize_Busy" xml:space="preserve"><value>整理操作正在进行，请稍候。</value></data>
+  <data name="Organize_Video" xml:space="preserve"><value>视频</value></data>
+  <data name="Organize_Empty" xml:space="preserve"><value>没有可整理的桌面项目。</value></data>
+  <data name="Organize_Count" xml:space="preserve"><value>将整理 {0} 项 · 留在桌面 {1} 项</value></data>
+  <data name="Organize_Target" xml:space="preserve"><value>目标分组</value></data>
+  <data name="Organize_NoUndo" xml:space="preserve"><value>没有可撤销的整理记录。</value></data>
+  <data name="Organize_RetryUndo" xml:space="preserve"><value>有项目尚未恢复，请先重试“撤销上次整理”，再进行新的整理。</value></data>
+  <data name="Context_Open" xml:space="preserve"><value>打开</value></data>
+  <data name="Context_MoveToGroup" xml:space="preserve"><value>移动到分组</value></data>
+  <data name="Context_CreateAndMove" xml:space="preserve"><value>新建分组并移入…</value></data>
+  <data name="Context_MoveToDesktop" xml:space="preserve"><value>移回桌面</value></data>
+  <data name="Context_OpenFolder" xml:space="preserve"><value>打开所在位置</value></data>
+  <data name="Context_Properties" xml:space="preserve"><value>属性</value></data>
+  <data name="Context_CollapseStyle" xml:space="preserve"><value>收起样式</value></data>
+  <data name="Context_ChangeIcon" xml:space="preserve"><value>更换图标…</value></data>
+  <data name="Context_ChangeIconHint" xml:space="preserve"><value>选择这个分组的图标，其他设置保持不变。</value></data>
+  <data name="Context_LockPosition" xml:space="preserve"><value>锁定位置</value></data>
+  <data name="Context_ActionFailedTitle" xml:space="preserve"><value>操作未完成</value></data>
+  <data name="Context_ActionFailed" xml:space="preserve"><value>操作未完成，原有项目不会被直接删除。\n{0}</value></data>
+  <data name="Context_GroupFull" xml:space="preserve"><value>这个分组没有空余位置，请先增大分组尺寸或选择其他分组。</value></data>
+  <data name="Context_GroupDisabled" xml:space="preserve"><value>请先在分组管理中启用这个分组，再移入项目。</value></data>
 </root>

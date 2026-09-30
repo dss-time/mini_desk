@@ -18,7 +18,7 @@ public partial class CreateGroupWindow : Window
     private string? _uploadPath;
     public CreationResult? Result { get; private set; }
 
-    public CreateGroupWindow()
+    public CreateGroupWindow(CategoryGroup? editingIcon = null)
     {
         InitializeComponent();
         var l = LocalizationService.Current;
@@ -44,6 +44,18 @@ public partial class CreateGroupWindow : Window
             new IconChoice(l.Get("Icon_Word"), "\uE7C3", "#2B579A")
         };
         IconChoices.SelectedIndex = 0;
+        if (editingIcon is not null)
+        {
+            Title = l.Get("Context_ChangeIcon");
+            DialogHeading.Text = Title;
+            DialogSubtitle.Text = l.Get("Context_ChangeIconHint");
+            CreateButton.Content = l.Get("Common_Confirm");
+            StateSettings.Visibility = Visibility.Collapsed;
+            GroupNameBox.Text = editingIcon.Name;
+            GroupNameBox.IsReadOnly = true;
+            IconChoices.SelectedItem = IconChoices.Items.OfType<IconChoice>().FirstOrDefault(c => c.Glyph == editingIcon.Glyph && c.Accent == editingIcon.Accent) ?? IconChoices.Items[0];
+            if (!string.IsNullOrWhiteSpace(editingIcon.IconPath)) SetUploadedFile(editingIcon.IconPath);
+        }
     }
 
     private IconChoice SelectedIcon => IconChoices.SelectedItem as IconChoice ??

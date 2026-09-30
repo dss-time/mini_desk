@@ -8,6 +8,7 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="/Styles/DesignTokens.xaml" />
                 <ResourceDictionary Source="/Styles/FluentControls.xaml" />
+                <ResourceDictionary Source="/Styles/ContextMenus.xaml" />
             </ResourceDictionary.MergedDictionaries>
         <conv:HexBrushConverter x:Key="HexBrush" />
         <conv:ShellIconConverter x:Key="ShellIcon" />

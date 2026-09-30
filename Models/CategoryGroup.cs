@@ -19,6 +19,7 @@ public sealed class CategoryGroup : ObservableObject
     private GroupDisplayState _state;
     private CollapseStyle _collapseStyle = CollapseStyle.HorizontalCapsule;
     private bool _isEnabled = true;
+    private bool _isPositionLocked;
     private string _monitorDeviceName = string.Empty;
     private double? _monitorOffsetX;
     private double? _monitorOffsetY;
@@ -43,6 +44,7 @@ public sealed class CategoryGroup : ObservableObject
     public int StateIndex { get => (int)State; set => State = (GroupDisplayState)value; }
     public CollapseStyle CollapseStyle { get => _collapseStyle; set => SetProperty(ref _collapseStyle, value); }
     public bool IsEnabled { get => _isEnabled; set => SetProperty(ref _isEnabled, value); }
+    public bool IsPositionLocked { get => _isPositionLocked; set => SetProperty(ref _isPositionLocked, value); }
     public string MonitorDeviceName { get => _monitorDeviceName; set => SetProperty(ref _monitorDeviceName, value); }
     // Monitor-local device-independent coordinates. Left/Top remain serialized for
     // backward compatibility with configurations created before schema version 5.

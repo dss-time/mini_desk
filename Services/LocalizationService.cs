@@ -12,6 +12,11 @@ public sealed class LocalizationService : INotifyPropertyChanged
     private static readonly CultureInfo SystemFormatCulture = CultureInfo.CurrentCulture;
     private static readonly string[] ResourceKeys =
     [
+        "Context_GroupDisabled",
+        "Context_GroupFull",
+        "Context_Open", "Context_MoveToGroup", "Context_CreateAndMove", "Context_MoveToDesktop", "Context_OpenFolder", "Context_Properties", "Context_CollapseStyle", "Context_ChangeIcon", "Context_ChangeIconHint", "Context_LockPosition", "Context_ActionFailedTitle", "Context_ActionFailed",
+        "Organize_RetryUndo",
+        "Organize_Title", "Organize_Subtitle", "Organize_Hint", "Organize_Desktop", "Organize_Apply", "Organize_Undo", "Organize_Result", "Organize_UndoResult", "Organize_Error", "Organize_Snapshot", "Organize_Busy", "Organize_Video", "Organize_Empty", "Organize_Count", "Organize_Target", "Organize_NoUndo",
         "Nav_Home", "Nav_Groups", "Nav_Snapshots", "Nav_Appearance", "Nav_Quick", "Nav_About",
         "Home_Title", "Home_Subtitle", "Home_Start", "Home_Organize", "Home_OrganizeDesc", "Home_Collapse", "Home_CollapseDesc", "Home_Snapshot", "Home_SnapshotDesc", "Home_Appearance", "Home_AppearanceDesc",
         "Groups_Title", "Groups_Subtitle", "Groups_New", "Groups_Name", "Groups_Items", "Groups_State", "Groups_AutoCollapse", "Groups_Actions", "Groups_Rename", "Groups_Delete",

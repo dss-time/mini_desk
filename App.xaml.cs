@@ -22,6 +22,8 @@ public partial class App : System.Windows.Application
     private Forms.NotifyIcon? _tray;
     private Icon? _applicationIcon;
     private MainWindow? _manager;
+    private DesktopOrganizationService? _organization;
+    private bool _organizationUiBusy;
 
     public WorkspaceConfig Config { get; private set; } = new();
 
@@ -50,6 +52,10 @@ public partial class App : System.Windows.Application
         Config.Version = Math.Max(Config.Version, 5);
         LocalizationService.Current.SetCulture(Config.Language);
         LocalizationService.Current.SetRegionCulture(Config.RegionCulture);
+        _organization = new DesktopOrganizationService(_desktopVisibility, SaveNowAsync,
+            async () => { await CreateSnapshotAsync(LocalizationService.Current.Get("Organize_Snapshot"), true); });
+        try { await _organization.UndoAsync(Config, pendingOnly: true); }
+        catch (Exception ex) { System.Diagnostics.Trace.WriteLine(ex); }
         LocalizationService.Current.CultureChanged += LocalizationChanged;
         DisplayTopologyService.Current.TopologyChanged += DisplayTopologyChanged;
         _desktopVisibility.Reconcile(Config);
@@ -83,7 +89,7 @@ public partial class App : System.Windows.Application
             if (!_groupWindows.TryGetValue(group.Id, out var window))
             {
                 window = new DesktopGroupWindow(group, Config, SaveAsync, OpenManager, DeleteGroupAsync,
-                    MoveItemBetweenGroupsAsync, _desktopVisibility.Hide, RestoreDesktopItem);
+                    MoveItemBetweenGroupsAsync, _desktopVisibility.Hide, RestoreDesktopItem, CreateGroupFromPromptAsync);
                 _groupWindows[group.Id] = window;
                 window.Show();
             }
@@ -109,13 +115,64 @@ public partial class App : System.Windows.Application
             _manager = new MainWindow(Config, SaveAsync, RefreshGroupWindows, DeleteGroupAsync,
                 snapshotService: _snapshotService, createSnapshot: CreateSnapshotAsync, restoreSnapshot: RestoreSnapshotAsync,
                 themeChanged: ApplyTheme, refreshAppearance: RefreshGroupAppearance,
-                commitCornerRadius: CommitGroupCornerRadius);
+                commitCornerRadius: CommitGroupCornerRadius, organize: OrganizeDesktopAsync);
             MainWindow = _manager;
             _manager.Closed += (_, _) => _manager = null;
         }
         _manager.Show();
         _manager.WindowState = WindowState.Normal;
         _manager.Activate();
+    }
+
+    private async Task OrganizeDesktopAsync(bool undo)
+    {
+        if (_organizationUiBusy || _organization is null || _manager is null) return;
+        _organizationUiBusy = true;
+        var manager = _manager;
+        try
+        {
+            if (undo && Config.LastOrganization?.Entries.Count is not > 0)
+            { MessageBox.Show(manager, LocalizationService.Current.Get("Organize_NoUndo"), LocalizationService.Current.Get("Organize_Title")); return; }
+            if (!undo)
+            {
+                manager.IsEnabled = false;
+                List<OrganizationCandidate> candidates;
+                try { candidates = await DesktopOrganizationService.ScanDesktopAsync(Config); }
+                finally { manager.IsEnabled = true; }
+                var dialog = new OrganizeDesktopWindow(Config, candidates) { Owner = manager };
+                manager.SetModalOverlay(true);
+                bool accepted;
+                try { accepted = dialog.ShowDialog() == true; }
+                finally { manager.SetModalOverlay(false); }
+                if (!accepted) return;
+                manager.IsEnabled = false;
+                foreach (var window in _groupWindows.Values) window.IsEnabled = false;
+                var result = await _organization.ApplyAsync(Config, dialog.Candidates);
+                manager.IsEnabled = true;
+                MessageBox.Show(manager, LocalizationService.Current.Format("Organize_Result", result.Applied, result.Failed), LocalizationService.Current.Get("Organize_Title"));
+            }
+            else
+            {
+                manager.IsEnabled = false;
+                foreach (var window in _groupWindows.Values) window.IsEnabled = false;
+                var result = await _organization.UndoAsync(Config);
+                manager.IsEnabled = true;
+                MessageBox.Show(manager, LocalizationService.Current.Format("Organize_UndoResult", result.Restored, result.Skipped), LocalizationService.Current.Get("Organize_Title"));
+            }
+        }
+        catch (Exception ex)
+        {
+            manager.IsEnabled = true;
+            MessageBox.Show(manager, LocalizationService.Current.Format("Organize_Error", ex.Message), LocalizationService.Current.Get("Organize_Title"), MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+        finally
+        {
+            manager.IsEnabled = true;
+            foreach (var window in _groupWindows.Values) window.IsEnabled = true;
+            RefreshGroupWindows();
+            manager.RefreshData();
+            _organizationUiBusy = false;
+        }
     }
 
     public Task SaveAsync()
@@ -170,25 +227,7 @@ public partial class App : System.Windows.Application
 
     private async Task MoveItemBetweenGroupsAsync(Guid sourceGroupId, DesktopItem item, Guid? targetGroupId, System.Windows.Point position)
     {
-        var source = Config.Groups.FirstOrDefault(group => group.Id == sourceGroupId);
-        if (source is null || !source.Items.Contains(item)) return;
-        if (targetGroupId is Guid targetId)
-        {
-            var target = Config.Groups.FirstOrDefault(group => group.Id == targetId);
-            if (target is null || target == source) return;
-            if (target.Items.Any(existing => string.Equals(existing.Path, item.Path, StringComparison.OrdinalIgnoreCase))) return;
-            source.Items.Remove(item);
-            item.X = Math.Max(0, position.X);
-            item.Y = Math.Max(0, position.Y);
-            target.Items.Add(item);
-            target.NotifyCount();
-        }
-        else
-        {
-            if (!RestoreDesktopItem(item)) return;
-            source.Items.Remove(item);
-        }
-        source.NotifyCount();
+        if (!GroupItemTransferService.TryMove(Config, sourceGroupId, item, targetGroupId, position, RestoreDesktopItem)) return;
         await SaveAsync();
     }
 

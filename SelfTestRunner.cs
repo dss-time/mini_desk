@@ -368,17 +368,19 @@ public static class SelfTestRunner
             };
             window.CollapsedCard.RaiseEvent(mouseUp); await Idle();
             Assert(group.State == GroupDisplayState.Expanded, "点击收起卡片未重新展开");
-            var iconOnly = window.ContextMenu!.Items.OfType<MenuItem>().First(item => Equals(item.Header, "收起为仅图标"));
+            window.PopulateGroupMenu(window.ContextMenu!);
+            var iconOnly = window.ContextMenu!.Items.OfType<MenuItem>().Single(item => Equals(item.Tag, "Context_CollapseStyle")).Items.OfType<MenuItem>().Single(item => Equals(item.Tag, "Collapse_IconOnly"));
             Invoke(iconOnly); await Idle();
             Assert(group.State == GroupDisplayState.Collapsed && group.CollapseStyle == CollapseStyle.IconOnly,
                 "右键菜单的仅图标样式未生效");
+            window.PopulateGroupMenu(window.ContextMenu!);
             var expand = window.ContextMenu.Items.OfType<MenuItem>().First(item => Equals(item.Header, "展开"));
             Invoke(expand); await Idle();
             var oldWidth = group.Width;
             var oldHeight = group.Height;
             window.ResizeThumb.RaiseEvent(new DragDeltaEventArgs(28, 22)); await Idle();
             Assert(group.Width >= oldWidth + 27 && group.Height >= oldHeight + 21, "缩放拖柄未更新尺寸");
-            Assert(window.ContextMenu?.Items.Count >= 9, "右键菜单项目不完整");
+            Assert(window.ContextMenu?.Items.Count >= 8, "右键菜单项目不完整");
             Assert(saves >= 2, "交互没有保存状态");
             window.AllowClose = true;
             window.Close();
@@ -656,6 +658,182 @@ public static class SelfTestRunner
             Assert(localization.Get("Nav_Home") == "首页" && CultureInfo.CurrentCulture.Name == "zh-CN", "简体中文资源或 Culture 未生效");
         });
 
+        await Run(results, "整理桌面：保守分类、预览与中英文", async () =>
+        {
+            var desktop = Path.Combine(tempRoot, "organize-preview"); Directory.CreateDirectory(desktop);
+            foreach (var name in new[] { "budget.xlsx", "notes.docx", "unknown.bin", "custom-tool.lnk", "hidden.pdf", "grouped.pdf" })
+                await File.WriteAllTextAsync(Path.Combine(desktop, name), "test");
+            File.SetAttributes(Path.Combine(desktop, "hidden.pdf"), FileAttributes.Hidden);
+            Directory.CreateDirectory(Path.Combine(desktop, "finance"));
+            var config = new WorkspaceConfig(); var office = ConfigService.NewGroup("办公"); config.Groups.Add(office);
+            DesktopItemService.AddPath(office, Path.Combine(desktop, "grouped.pdf"));
+            var candidates = DesktopOrganizationService.Scan(config, new[] { desktop, desktop }, _ => "C:\\Tools\\unknown.exe");
+            Assert(candidates.Count == 4, "扫描包含隐藏/已分组/文件夹/重复项目");
+            Assert(candidates.Single(c => c.Name == "budget.xlsx").Target?.GroupId == office.Id, "未复用办公组");
+            Assert(candidates.Single(c => c.Name == "custom-tool.lnk").Target is null, "未知工具不应猜测分类");
+            Assert(DesktopOrganizationService.Classify("shortcut.lnk", "C:\\Tools\\Code.exe") == "development", "目标程序识别错误");
+            Assert(DesktopOrganizationService.Classify("finance.lnk", "C:\\Tools\\terminal.exe") is null, "通用程序名不应判定财经");
+            var excel = ConfigService.NewGroup("Excel"); config.Groups.Add(excel);
+            Assert(DesktopOrganizationService.Scan(config, new[] { desktop }).Single(c => c.Name == "budget.xlsx").Target?.GroupId == excel.Id, "已有 Excel 专用组未优先");
+            foreach (var culture in new[] { "zh-CN", "en-US" })
+            {
+                LocalizationService.Current.SetCulture(culture);
+                var preview = DesktopOrganizationService.Scan(config, new[] { desktop });
+                var dialog = new OrganizeDesktopWindow(config, preview);
+                dialog.Show(); await Idle();
+                Assert(dialog.ApplyButton.IsEnabled, "已识别项目应允许整理");
+                Assert(dialog.Summary.Text.Contains("2"), "预览数量错误");
+                SaveVisual(dialog, Path.Combine(Environment.CurrentDirectory, $"implementation-organize-{culture}.png"));
+                dialog.Close(); // Cancel/close: no changes to the config or desktop.
+                Assert(File.GetAttributes(Path.Combine(desktop, "budget.xlsx")) == FileAttributes.Normal || !File.GetAttributes(Path.Combine(desktop, "budget.xlsx")).HasFlag(FileAttributes.Hidden), "取消修改了文件");
+                Assert(config.Groups.Sum(g => g.Items.Count) == 1, "取消修改了归属");
+            }
+            LocalizationService.Current.SetCulture("zh-CN");
+        });
+
+        await Run(results, "整理桌面：确认、持久化、范围撤销及失败保护", async () =>
+        {
+            var desktop = Path.Combine(tempRoot, "organize-apply"); Directory.CreateDirectory(desktop);
+            var doc = Path.Combine(desktop, "report.docx"); var picture = Path.Combine(desktop, "photo.png");
+            await File.WriteAllTextAsync(doc, "document"); await File.WriteAllTextAsync(picture, "picture");
+            var config = new WorkspaceConfig(); var office = ConfigService.NewGroup("办公", left: 55, top: 66); config.Groups.Add(office);
+            var store = new ConfigService(Path.Combine(tempRoot, "organization.json"));
+            var visibility = new DesktopVisibilityService(desktop, desktop, Path.Combine(tempRoot, "organize-storage"));
+            int snapshots = 0;
+            var service = new DesktopOrganizationService(visibility, () => store.SaveAsync(config), () => { snapshots++; return Task.CompletedTask; });
+            var candidates = DesktopOrganizationService.Scan(config, new[] { desktop });
+            var result = await service.ApplyAsync(config, candidates);
+            Assert(result == (2, 0) && snapshots == 1, "确认整理数量或快照错误");
+            Assert(File.Exists(doc) && File.GetAttributes(doc).HasFlag(FileAttributes.Hidden), "真实文档路径被改动或未隐藏");
+            Assert(office.Left == 55 && office.Top == 66, "现有分组布局被改动");
+            var saved = await store.LoadAsync(); Assert(saved.LastOrganization?.Entries.Count == 2, "撤销记录未持久化");
+            office.Items[0].X += 7; // Manual reposition after applying must survive undo.
+            result = await service.UndoAsync(config);
+            Assert(result == (1, 1) && office.Items.Count == 1, "撤销误覆盖了手动改动");
+            Assert(!File.GetAttributes(picture).HasFlag(FileAttributes.Hidden), "撤销未恢复桌面项目");
+            visibility.Restore(office.Items[0]); office.Items.Clear();
+            var missing = DesktopOrganizationService.Scan(config, new[] { desktop }); File.Delete(doc);
+            result = await service.ApplyAsync(config, missing);
+            Assert(result == (1, 1), "预览后文件消失未安全跳过");
+            await service.UndoAsync(config);
+            var noWrites = new DesktopOrganizationService(visibility, () => Task.FromException(new IOException("disk failure")), () => Task.CompletedTask);
+            bool threw = false;
+            try { await noWrites.ApplyAsync(config, DesktopOrganizationService.Scan(config, new[] { desktop })); } catch (IOException) { threw = true; }
+            Assert(threw && !File.GetAttributes(picture).HasFlag(FileAttributes.Hidden), "保存失败仍修改了桌面文件");
+        });
+
+        await Run(results, "整理桌面：中断恢复与快捷方式隐藏失败", async () =>
+        {
+            var desktop = Path.Combine(tempRoot, "organize-recovery"); Directory.CreateDirectory(desktop);
+            var link = Path.Combine(desktop, "Code.lnk"); await File.WriteAllTextAsync(link, "shortcut fixture");
+            var config = new WorkspaceConfig(); var group = ConfigService.NewGroup("开发工具"); config.Groups.Add(group);
+            var storage = Path.Combine(tempRoot, "recovery-storage"); var visibility = new DesktopVisibilityService(desktop, desktop, storage);
+            var store = new ConfigService(Path.Combine(tempRoot, "recovery.json"));
+            var service = new DesktopOrganizationService(visibility, () => store.SaveAsync(config), () => Task.CompletedTask);
+            var candidates = DesktopOrganizationService.Scan(config, new[] { desktop }, _ => "C:\\Code.exe");
+            Assert((await service.ApplyAsync(config, candidates)).Applied == 1 && !File.Exists(link), "快捷方式未受控收纳");
+            config.LastOrganization!.Entries[0].RestorePending = true; await store.SaveAsync(config);
+            Assert(visibility.Restore(group.Items[0]), "模拟中断前恢复失败"); // Crash before saving updated model.
+            var loaded = await store.LoadAsync();
+            var recover = new DesktopOrganizationService(visibility, () => store.SaveAsync(loaded), () => Task.CompletedTask);
+            await recover.UndoAsync(loaded, pendingOnly: true); visibility.Reconcile(loaded);
+            Assert(File.Exists(link) && loaded.Groups.Sum(g => g.Items.Count) == 0, "中断恢复重新隐藏或丢失快捷方式");
+            var blockingStorage = Path.Combine(tempRoot, "storage-is-file"); await File.WriteAllTextAsync(blockingStorage, "block");
+            var blocked = new DesktopOrganizationService(new DesktopVisibilityService(desktop, desktop, blockingStorage), () => store.SaveAsync(config), () => Task.CompletedTask);
+            group.Items.Clear();
+            config.LastOrganization = null; // New test fixture, not the stale pre-crash model.
+            Assert((await blocked.ApplyAsync(config, DesktopOrganizationService.Scan(config, new[] { desktop }, _ => "C:\\Code.exe"))).Failed == 1, "隐藏失败未反馈");
+            Assert(File.Exists(link) && group.Items.Count == 0, "隐藏失败留下错误归属或丢失快捷方式");
+        });
+
+        await Run(results, "右键菜单：即时状态、分组移动、锁定与中英文", async () =>
+        {
+            var config = new WorkspaceConfig { AttachToDesktop = false };
+            var source = ConfigService.NewGroup("来源组", left: 40, top: 40);
+            var target = ConfigService.NewGroup("Target group"); config.Groups.Add(source); config.Groups.Add(target);
+            DesktopItemService.AddPath(source, sample, out var item);
+            int saves = 0, restores = 0;
+            var window = new DesktopGroupWindow(source, config, () => { saves++; return Task.CompletedTask; }, () => { }, _ => Task.CompletedTask,
+                (sourceId, moving, targetId, point) => { Assert(GroupItemTransferService.TryMove(config, sourceId, moving, targetId, point, _ => { restores++; return true; }), "菜单移动失败"); return Task.CompletedTask; },
+                createGroup: () => Task.FromResult<CategoryGroup?>(null));
+            window.Show(); await Idle();
+            foreach (var culture in new[] { "zh-CN", "en-US" })
+            {
+                LocalizationService.Current.SetCulture(culture); window.RefreshLocalization();
+                var groupMenu = window.ContextMenu!; groupMenu.PlacementTarget = window.ExpandedCard; groupMenu.IsOpen = true; await Idle();
+                Assert(groupMenu.Items.OfType<MenuItem>().Any(m => Equals(m.Tag, "Context_LockPosition")), "缺少锁定入口");
+                SaveElement(groupMenu, Path.Combine(Environment.CurrentDirectory, $"implementation-context-group-{culture}.png"));
+                groupMenu.IsOpen = false;
+                var itemMenu = new ContextMenu { PlacementTarget = window.ExpandedCard }; window.PopulateItemMenu(itemMenu, item!);
+                itemMenu.IsOpen = true; await Idle();
+                Assert(itemMenu.Items.OfType<MenuItem>().Single(m => Equals(m.Tag, "Context_MoveToDesktop")).Header?.ToString() == LocalizationService.Current.Get("Context_MoveToDesktop"), "桌面恢复文案未翻译");
+                var destinations = itemMenu.Items.OfType<MenuItem>().Single(m => Equals(m.Tag, "Context_MoveToGroup"));
+                Assert(destinations.Items.OfType<MenuItem>().Single(m => Equals(m.Tag, source.Id)).IsChecked && !destinations.Items.OfType<MenuItem>().Single(m => Equals(m.Tag, source.Id)).IsEnabled, "当前分组未标记或仍可重复移动");
+                target.IsEnabled = false; window.PopulateItemMenu(new ContextMenu(), item!);
+                var disabledMenu = new ContextMenu(); window.PopulateItemMenu(disabledMenu, item!);
+                Assert(!disabledMenu.Items.OfType<MenuItem>().Single(m => Equals(m.Tag, "Context_MoveToGroup")).Items.OfType<MenuItem>().Single(m => Equals(m.Tag, target.Id)).IsEnabled, "未启用分组仍可接收图标导致不可见");
+                target.IsEnabled = true;
+                SaveElement(itemMenu, Path.Combine(Environment.CurrentDirectory, $"implementation-context-item-{culture}.png"));
+                destinations.IsSubmenuOpen = true; await Idle();
+                var late = ConfigService.NewGroup("Later added group"); config.Groups.Add(late);
+                destinations.IsSubmenuOpen = false; itemMenu.IsOpen = false;
+                window.PopulateItemMenu(itemMenu, item!);
+                Assert(itemMenu.Items.OfType<MenuItem>().Single(m => Equals(m.Tag, "Context_MoveToGroup")).Items.OfType<MenuItem>().Any(m => Equals(m.Tag, late.Id)), "菜单没有动态反映新增分组");
+                config.Groups.Remove(late);
+            }
+            var menu = new ContextMenu(); window.PopulateItemMenu(menu, item!);
+            var moves = menu.Items.OfType<MenuItem>().Single(m => Equals(m.Tag, "Context_MoveToGroup"));
+            Invoke(moves.Items.OfType<MenuItem>().Single(m => Equals(m.Tag, target.Id))); await Idle();
+            Assert(source.Items.Count == 0 && target.Items.Contains(item!) && restores == 0 && item!.Path == sample, "跨组移动改变路径或未更新归属");
+            Assert(!await window.ReturnItemToDesktopAsync(item!), "过期菜单可以误移除其他分组的图标");
+            source.State = GroupDisplayState.Collapsed; window.RefreshVisualState(); window.PopulateGroupMenu(window.ContextMenu!);
+            Invoke(window.ContextMenu!.Items.OfType<MenuItem>().Single(m => Equals(m.Tag, "Context_LockPosition"))); await Idle();
+            var oldLeft = source.Left; var oldTop = source.Top; var oldWidth = source.Width;
+            window.MoveCollapsedTo(oldLeft + 60, oldTop + 60); window.ResizeThumb.RaiseEvent(new DragDeltaEventArgs(60, 60));
+            Assert(source.IsPositionLocked && source.Left == oldLeft && source.Top == oldTop && source.Width == oldWidth && !window.ResizeThumb.IsEnabled, "锁定后仍可移动或缩放");
+            window.PopulateGroupMenu(window.ContextMenu!);
+            Invoke(window.ContextMenu!.Items.OfType<MenuItem>().Single(m => Equals(m.Tag, "Group_Expand"))); await Idle();
+            Assert(source.State == GroupDisplayState.Expanded, "锁定不应禁止展开");
+            var store = new ConfigService(Path.Combine(tempRoot, "locked-group.json")); await store.SaveAsync(config);
+            Assert((await store.LoadAsync()).Groups[0].IsPositionLocked, "锁定状态没有持久化");
+            Assert(saves > 0, "菜单操作未保存");
+            window.AllowClose = true; window.Close(); LocalizationService.Current.SetCulture("zh-CN");
+        });
+
+        await Run(results, "右键移回桌面：恢复失败、重复及缺失目标保护", async () =>
+        {
+            var desktop = Path.Combine(tempRoot, "context-restore"); Directory.CreateDirectory(desktop);
+            var file = Path.Combine(desktop, "keep.txt"); await File.WriteAllTextAsync(file, "safe");
+            var config = new WorkspaceConfig { AttachToDesktop = false }; var group = ConfigService.NewGroup("Safe group"); config.Groups.Add(group);
+            DesktopItemService.AddPath(group, file, out var item);
+            var visibility = new DesktopVisibilityService(desktop, desktop, Path.Combine(tempRoot, "context-storage"));
+            Assert(visibility.Hide(item!), "测试隐藏失败"); bool allowRestore = false; int saves = 0;
+            var window = new DesktopGroupWindow(group, config, () => { saves++; return Task.CompletedTask; }, () => { }, _ => Task.CompletedTask,
+                restoreItem: i => allowRestore && visibility.Restore(i));
+            Assert(!await window.ReturnItemToDesktopAsync(item!) && group.Items.Contains(item!) && saves == 0 && File.GetAttributes(file).HasFlag(FileAttributes.Hidden), "恢复失败后丢失记录");
+            allowRestore = true;
+            Assert(await window.ReturnItemToDesktopAsync(item!) && group.Items.Count == 0 && File.Exists(file) && !File.GetAttributes(file).HasFlag(FileAttributes.Hidden), "成功恢复后文件或归属错误");
+            Assert(!await window.ReturnItemToDesktopAsync(item!), "重复移回桌面没有保护");
+            DesktopItemService.AddPath(group, file, out item);
+            var target = ConfigService.NewGroup("Target"); config.Groups.Add(target); DesktopItemService.AddPath(target, file);
+            Assert(!GroupItemTransferService.TryMove(config, group.Id, item!, target.Id, default, _ => true) && group.Items.Contains(item!), "重复目标导致来源项丢失");
+            Assert(!GroupItemTransferService.TryMove(config, group.Id, item!, Guid.NewGuid(), default, _ => true), "不存在的分组仍可接受项目");
+            Assert(ShellItemActionsService.GetFolder(new DesktopItem { Path = Path.Combine(tempRoot, "context-storage", "managed.lnk"), OriginalDesktopPath = Path.Combine(desktop, "original.lnk") }) == desktop, "打开位置泄露了内部快捷方式存储目录");
+            window.AllowClose = true; window.Close();
+        });
+
+        await Run(results, "更换图标：复用选择器且保持分组其他设置", async () =>
+        {
+            var group = ConfigService.NewGroup("原有分组", state: GroupDisplayState.Collapsed); group.IsPositionLocked = true;
+            var dialog = new CreateGroupWindow(group);
+            dialog.Show(); await Idle();
+            Assert(dialog.GroupNameBox.IsReadOnly && dialog.GroupNameBox.Text == group.Name && dialog.StateSettings.Visibility == Visibility.Collapsed, "更换图标仍允许修改归属设置");
+            dialog.IconChoices.SelectedIndex = 14; await Idle();
+            SaveVisual(dialog, Path.Combine(Environment.CurrentDirectory, "implementation-change-group-icon.png"));
+            dialog.Close();
+            Assert(group.State == GroupDisplayState.Collapsed && group.IsPositionLocked && group.Glyph == "\uE7C3", "取消更换图标修改了分组");
+        });
+
         try { Directory.Delete(tempRoot, true); } catch { }
         var passed = results.All(result => result.Passed);
         var outputPath = Environment.GetEnvironmentVariable("MINIDESK_SELFTEST_OUTPUT") ?? Path.Combine(
@@ -746,7 +924,9 @@ public static class SelfTestRunner
         }
     }
 
-    private static void SaveVisual(Window window, string path)
+    private static void SaveVisual(Window window, string path) => SaveElement(window, path);
+
+    private static void SaveElement(FrameworkElement window, string path)
     {
         window.UpdateLayout();
         var dpi = VisualTreeHelper.GetDpi(window);

@@ -53,7 +53,7 @@
                                     MouseLeftButtonDown="Item_MouseLeftButtonDown" MouseMove="Item_MouseMove"
                                     MouseLeftButtonUp="Item_MouseLeftButtonUp">
                                 <Border.ContextMenu>
-                                    <ContextMenu><MenuItem Header="{DynamicResource Group_RemoveItem}" Click="RemoveItem_Click" /></ContextMenu>
+                                    <ContextMenu Opened="ItemContextMenu_Opened" />
                                 </Border.ContextMenu>
                                 <StackPanel>
                                     <Grid Width="44" Height="44" HorizontalAlignment="Center">

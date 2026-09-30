@@ -129,6 +129,7 @@ public sealed class DesktopVisibilityService
     {
         foreach (var item in config.Groups.SelectMany(group => group.Items))
         {
+            if (config.LastOrganization?.Entries.Any(e => e.ItemId == item.Id && e.RestorePending) == true) continue;
             if (item.VisibilityMode == DesktopVisibilityMode.None) Hide(item);
             else EnsureHidden(item);
         }

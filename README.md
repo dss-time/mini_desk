@@ -42,7 +42,21 @@ cd mini_desk
 
 安装包输出到 `Release\MiniDesk-Setup-x64.exe` 或 `Release\MiniDesk-Setup-arm64.exe`。安装器可创建桌面和开始菜单快捷方式，并可选设置开机启动。卸载时会询问保留布局数据还是删除 MiniDesk 配置；无论选择哪项，都不会删除用户的桌面真实文件。
 
+### 整理桌面（v1.0.3 第一阶段）
+
+在首页或“分组管理”点击“整理桌面”，先检查逐项预览，可为每个项目选择目标分组或“留在桌面”。点击“确认整理”后才应用；取消不会改变桌面。自动建议只识别常见文件格式和已知快捷方式目标程序，未知项目、文件夹、隐藏项目和已分组项目默认不处理。已有 Word / Excel / PPT / PDF 专用组优先，否则归入办公；只按需创建非空分类，不重排已有分组。
+
+确认前自动保存快照，并将本次整理记录写入本地 JSON。“分组管理 → 撤销上次整理”只恢复本次仍未被手动移动的项目，不回退其他布局变更。恢复失败时保留记录，可重试；新创建的空分组会保留，避免误删后续手动设置。文档真实路径不变，快捷方式沿用 MiniDesk 现有受控收纳及恢复机制。当前阶段不启用后台监听和新项目自动整理，也尚未加入个人偏好记忆。
+
+English: Choose **Organize desktop**, review each destination, then apply. Cancel changes nothing. Unknown files and folders stay on the desktop. Existing dedicated Office categories take priority. **Undo last organization** restores only unchanged items from the latest batch; new empty groups remain. A local snapshot and persistent undo journal protect the operation. Background organization and preference memory are not enabled in this phase.
+
 ### 基本使用
+
+v1.0.3 新增分组右键菜单：在分组内图标上右键，可打开、移动到现有分组、新建分组并移入、移回桌面、打开所在位置或查看 Windows 属性。当前分组标记为已选中；未启用的目标分组不可选择，目标分组没有空余位置时会提示先增大尺寸。移回桌面失败会保留原有分组记录，不会直接删除文件。
+
+在分组标题、空白区域或收起卡片上右键，可展开/收起、选择收起样式、重命名、更换系统或上传图标、锁定位置，以及删除分组。“锁定位置”会禁止拖动和缩放，但不会影响展开、收起或文件操作。删除分组前会提示恢复桌面项目；任一项目恢复失败时不删除分组。
+
+English: Right-click a grouped item to open it, move it to another group (or create one), return it to the desktop, open its original containing folder, or view Windows properties. Right-click a group to change its collapsed style, rename it, change its icon, lock its position, or delete the group safely. Locking prevents panel movement and resizing, not item interaction. Failed restoration keeps the item tracked.
 
 “新建分组 → 系统图标”提供 18 种内置图标，包括财经、代理工具、Excel、PPT、PDF、Word。向下滚动图标列表可选择新增项目；选择后效果预览立即更新，也可切换“上传图标”使用自己的图标。
 

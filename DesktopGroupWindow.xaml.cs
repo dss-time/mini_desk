@@ -21,6 +21,9 @@ public partial class DesktopGroupWindow : Window
     private readonly Func<Guid, DesktopItem, Guid?, System.Windows.Point, Task> _moveItem;
     private readonly Func<DesktopItem, bool> _hideItem;
     private readonly Func<DesktopItem, bool> _restoreItem;
+    private readonly Func<Task<CategoryGroup?>>? _createGroup;
+    private readonly GroupIconStorageService _iconStorage = new();
+    private bool _menuActionBusy;
     private bool _attached;
     private bool _movingWindow;
     private bool _collapsedPointerDown;
@@ -40,7 +43,8 @@ public partial class DesktopGroupWindow : Window
     public DesktopGroupWindow(CategoryGroup group, WorkspaceConfig config, Func<Task> save,
         Action openManager, Func<CategoryGroup, Task> delete,
         Func<Guid, DesktopItem, Guid?, System.Windows.Point, Task>? moveItem = null,
-        Func<DesktopItem, bool>? hideItem = null, Func<DesktopItem, bool>? restoreItem = null)
+        Func<DesktopItem, bool>? hideItem = null, Func<DesktopItem, bool>? restoreItem = null,
+        Func<Task<CategoryGroup?>>? createGroup = null)
     {
         InitializeComponent();
         _group = group;
@@ -51,6 +55,7 @@ public partial class DesktopGroupWindow : Window
         _moveItem = moveItem ?? ((_, _, _, _) => Task.CompletedTask);
         _hideItem = hideItem ?? (_ => true);
         _restoreItem = restoreItem ?? (_ => true);
+        _createGroup = createGroup;
         DataContext = group;
         Left = group.Left;
         Top = group.Top;
@@ -77,27 +82,161 @@ public partial class DesktopGroupWindow : Window
         RefreshVisualState();
     }
 
-    private MenuItem Menu(string title, Func<Task> action)
+    private MenuItem Menu(string key, string glyph, Func<Task> action)
     {
-        var item = new MenuItem { Header = title };
-        item.Click += async (_, _) => await action();
+        var item = new MenuItem { Header = LocalizationService.Current.Get(key), Tag = key, Icon = MenuGlyph(glyph), HeaderTemplate = (DataTemplate)FindResource("ContextMenuHeader") };
+        item.Click += async (_, e) =>
+        {
+            e.Handled = true;
+            if (_menuActionBusy) return;
+            _menuActionBusy = true;
+            try { await action(); }
+            catch (Exception ex)
+            {
+                MessageBox.Show(LocalizationService.Current.Format("Context_ActionFailed", ex.Message),
+                    LocalizationService.Current.Get("Context_ActionFailedTitle"), MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+            finally { _menuActionBusy = false; }
+        };
         return item;
     }
 
+    private static TextBlock MenuGlyph(string glyph) => new()
+    { Text = glyph, FontFamily = new FontFamily("Segoe Fluent Icons"), FontSize = 16, VerticalAlignment = VerticalAlignment.Center };
+
+    private Separator MenuSeparator() => new() { Style = (Style)FindResource("ContextMenuSeparator") };
+
     public void RefreshLocalization()
     {
-        var l = LocalizationService.Current;
         var menu = new ContextMenu();
-        menu.Items.Add(Menu(l.Get("Group_Expand"), async () => { _group.State = GroupDisplayState.Expanded; RefreshVisualState(); await _save(); }));
-        menu.Items.Add(Menu(l.Get("Group_CollapseCapsule"), async () => { _group.CollapseStyle = CollapseStyle.HorizontalCapsule; _group.State = GroupDisplayState.Collapsed; RefreshVisualState(); await _save(); }));
-        menu.Items.Add(Menu(l.Get("Group_CollapseVertical"), async () => { _group.CollapseStyle = CollapseStyle.VerticalIcon; _group.State = GroupDisplayState.Collapsed; RefreshVisualState(); await _save(); }));
-        menu.Items.Add(Menu(l.Get("Group_CollapseIcon"), async () => { _group.CollapseStyle = CollapseStyle.IconOnly; _group.State = GroupDisplayState.Collapsed; RefreshVisualState(); await _save(); }));
-        menu.Items.Add(new Separator());
-        menu.Items.Add(Menu(l.Get("Common_Rename"), async () => { Rename(); await _save(); }));
-        menu.Items.Add(Menu(l.Get("Common_Settings"), () => { _openManager(); return Task.CompletedTask; }));
-        menu.Items.Add(new Separator());
-        menu.Items.Add(Menu(l.Get("Group_Delete"), ConfirmDeleteAsync));
+        PopulateGroupMenu(menu);
+        menu.Opened += (_, _) => PopulateGroupMenu(menu);
         ContextMenu = menu;
+    }
+
+    internal void PopulateGroupMenu(ContextMenu menu)
+    {
+        menu.Items.Clear();
+        bool expanded = _group.State == GroupDisplayState.Expanded;
+        menu.Items.Add(Menu(expanded ? "Group_Collapse" : "Group_Expand", expanded ? "\uE70E" : "\uE70D", async () =>
+        {
+            if (_group.State == GroupDisplayState.Expanded) { _group.Width = Width; _group.Height = Height; _group.State = GroupDisplayState.Collapsed; }
+            else _group.State = GroupDisplayState.Expanded;
+            RefreshVisualState(); await _save();
+        }));
+        var styles = new MenuItem { Header = LocalizationService.Current.Get("Context_CollapseStyle"), Tag = "Context_CollapseStyle", Icon = MenuGlyph("\uE8A0"), HeaderTemplate = (DataTemplate)FindResource("ContextMenuHeader") };
+        foreach (var (key, style) in new[] { ("Collapse_Capsule", CollapseStyle.HorizontalCapsule), ("Collapse_Vertical", CollapseStyle.VerticalIcon), ("Collapse_IconOnly", CollapseStyle.IconOnly) })
+        {
+            var choice = Menu(key, "", async () =>
+            {
+                if (_group.State == GroupDisplayState.Expanded) { _group.Width = Width; _group.Height = Height; }
+                _group.CollapseStyle = style; _group.State = GroupDisplayState.Collapsed;
+                RefreshVisualState(); await _save();
+            });
+            choice.IsCheckable = true; choice.IsChecked = (_group.State == GroupDisplayState.Minimized ? CollapseStyle.VerticalIcon : _group.CollapseStyle) == style;
+            styles.Items.Add(choice);
+        }
+        menu.Items.Add(styles);
+        menu.Items.Add(MenuSeparator());
+        menu.Items.Add(Menu("Common_Rename", "\uE70F", async () => { Rename(); await _save(); }));
+        menu.Items.Add(Menu("Context_ChangeIcon", "\uE8B9", ChangeIconAsync));
+        var locked = Menu("Context_LockPosition", "\uE72E", async () =>
+        { _group.IsPositionLocked = !_group.IsPositionLocked; RefreshVisualState(); await _save(); });
+        locked.IsCheckable = true; locked.IsChecked = _group.IsPositionLocked;
+        menu.Items.Add(locked);
+        menu.Items.Add(MenuSeparator());
+        var delete = Menu("Group_Delete", "\uE74D", ConfirmDeleteAsync);
+        delete.SetResourceReference(ForegroundProperty, "DangerBrush");
+        menu.Items.Add(delete);
+    }
+
+    private void ItemContextMenu_Opened(object sender, RoutedEventArgs e)
+    {
+        if (sender is ContextMenu { PlacementTarget: FrameworkElement { DataContext: DesktopItem item } } menu)
+            PopulateItemMenu(menu, item);
+        e.Handled = true;
+    }
+
+    internal void PopulateItemMenu(ContextMenu menu, DesktopItem item)
+    {
+        menu.Items.Clear();
+        bool belongs = _group.Items.Contains(item);
+        bool exists = File.Exists(item.Path) || Directory.Exists(item.Path);
+        var open = Menu("Context_Open", "\uE8E5", () => { if (_group.Items.Contains(item)) OpenItem(item); return Task.CompletedTask; });
+        open.IsEnabled = belongs && exists;
+        menu.Items.Add(open);
+        var destinations = new MenuItem { Header = LocalizationService.Current.Get("Context_MoveToGroup"), Tag = "Context_MoveToGroup", Icon = MenuGlyph("\uE8B7"), IsEnabled = belongs, HeaderTemplate = (DataTemplate)FindResource("ContextMenuHeader") };
+        foreach (var target in _config.Groups)
+        {
+            var destination = Menu("Context_MoveToGroup", target.Glyph, async () =>
+            {
+                if (_group.Items.Contains(item) && _config.Groups.Contains(target))
+                {
+                    var position = NextAvailablePosition(target);
+                    if (position is null) throw new InvalidOperationException(LocalizationService.Current.Get("Context_GroupFull"));
+                    await _moveItem(_group.Id, item, target.Id, position.Value);
+                }
+            });
+            destination.Header = target.Name;
+            destination.Tag = target.Id;
+            destination.IsCheckable = true;
+            destination.IsChecked = target.Id == _group.Id;
+            destination.IsEnabled = target.Id != _group.Id && target.IsEnabled;
+            if (!target.IsEnabled) destination.ToolTip = LocalizationService.Current.Get("Context_GroupDisabled");
+            destinations.Items.Add(destination);
+        }
+        destinations.Items.Add(MenuSeparator());
+        var create = Menu("Context_CreateAndMove", "\uE710", async () =>
+        {
+            if (!_group.Items.Contains(item) || _createGroup is null) return;
+            _openManager();
+            var target = await _createGroup();
+            if (target is not null && _group.Items.Contains(item) && _config.Groups.Contains(target))
+                await _moveItem(_group.Id, item, target.Id, new System.Windows.Point(8, 8));
+        });
+        create.IsEnabled = _createGroup is not null;
+        destinations.Items.Add(create);
+        menu.Items.Add(destinations);
+        var restore = Menu("Context_MoveToDesktop", "\uE7F8", () => ReturnItemToDesktopAsync(item));
+        restore.IsEnabled = belongs;
+        menu.Items.Add(restore);
+        menu.Items.Add(MenuSeparator());
+        var folder = Menu("Context_OpenFolder", "\uE838", () => { if (_group.Items.Contains(item)) ShellItemActionsService.OpenFolder(item); return Task.CompletedTask; });
+        folder.IsEnabled = belongs;
+        menu.Items.Add(folder);
+        var properties = Menu("Context_Properties", "\uE946", () => { if (_group.Items.Contains(item)) ShellItemActionsService.ShowProperties(item); return Task.CompletedTask; });
+        properties.IsEnabled = belongs && exists;
+        menu.Items.Add(properties);
+    }
+
+    internal async Task<bool> ReturnItemToDesktopAsync(DesktopItem item)
+    {
+        if (!_group.Items.Contains(item) || !_restoreItem(item)) return false;
+        _group.Items.Remove(item); _group.NotifyCount();
+        await _save();
+        return true;
+    }
+
+    private System.Windows.Point? NextAvailablePosition(CategoryGroup target)
+    {
+        var maxX = Math.Max(0, target.Width - 16 - 82);
+        var maxY = Math.Max(0, target.Height - _config.HeaderHeight - 16 - 86);
+        for (double y = 8; y <= maxY; y += 90)
+            for (double x = 8; x <= maxX; x += 86)
+                if (!target.Items.Any(i => Math.Abs(i.X - x) < 82 && Math.Abs(i.Y - y) < 86))
+                    return new System.Windows.Point(x, y);
+        return null;
+    }
+
+    private async Task ChangeIconAsync()
+    {
+        _openManager();
+        var dialog = new CreateGroupWindow(_group) { Owner = System.Windows.Application.Current.MainWindow };
+        if (dialog.ShowDialog() != true || dialog.Result is not { } result || !_config.Groups.Contains(_group)) return;
+        var iconPath = result.UploadPath is null ? string.Empty : _iconStorage.Store(result.UploadPath);
+        _group.Glyph = result.Glyph; _group.Accent = result.Accent; _group.IconPath = iconPath;
+        await _save();
+        RefreshVisualState();
     }
 
     public void RefreshVisualState()
@@ -114,6 +253,9 @@ public partial class DesktopGroupWindow : Window
         else ApplyCollapsedStyle(_group.State == GroupDisplayState.Minimized ? CollapseStyle.VerticalIcon : _group.CollapseStyle);
 
         UpdateEmptyState();
+        ResizeThumb.IsEnabled = !_group.IsPositionLocked;
+        ResizeThumb.Visibility = _group.IsPositionLocked ? Visibility.Collapsed : Visibility.Visible;
+        CollapsedCard.Cursor = _group.IsPositionLocked ? Cursors.Hand : Cursors.SizeAll;
         if (IsLoaded)
         {
             DisplayTopologyService.Current.Apply(_group, this);
@@ -263,7 +405,7 @@ public partial class DesktopGroupWindow : Window
 
     private void CollapsedCard_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
     {
-        if (!_collapsedPointerDown || e.LeftButton != MouseButtonState.Pressed) return;
+        if (_group.IsPositionLocked || !_collapsedPointerDown || e.LeftButton != MouseButtonState.Pressed) return;
         var cursor = Forms.Cursor.Position;
         var deltaX = cursor.X - _moveStartCursor.X;
         var deltaY = cursor.Y - _moveStartCursor.Y;
@@ -297,6 +439,7 @@ public partial class DesktopGroupWindow : Window
 
     internal void MoveCollapsedTo(double left, double top)
     {
+        if (_group.IsPositionLocked) return;
         _group.Left = left;
         _group.Top = top;
         Left = left;
@@ -306,7 +449,7 @@ public partial class DesktopGroupWindow : Window
 
     private void Header_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        if (e.ChangedButton != MouseButton.Left || e.OriginalSource is Button) return;
+        if (_group.IsPositionLocked || e.ChangedButton != MouseButton.Left || IsInsideButton(e.OriginalSource as DependencyObject)) return;
         _movingWindow = true;
         _moveStartCursor = Forms.Cursor.Position;
         _moveStartWindow = new System.Windows.Point(_group.Left, _group.Top);
@@ -334,6 +477,7 @@ public partial class DesktopGroupWindow : Window
 
     private void ResizeThumb_DragDelta(object sender, DragDeltaEventArgs e)
     {
+        if (_group.IsPositionLocked) return;
         _group.Width = Math.Max(260, _group.Width + e.HorizontalChange);
         _group.Height = Math.Max(170, _group.Height + e.VerticalChange);
         Width = _group.Width; Height = _group.Height;
@@ -463,17 +607,9 @@ public partial class DesktopGroupWindow : Window
         catch (Exception ex) { MessageBox.Show(this, ex.Message, LocalizationService.Current.Get("Message_OpenFailed"), MessageBoxButton.OK, MessageBoxImage.Warning); }
     }
 
-    private async void RemoveItem_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is not MenuItem { Parent: ContextMenu { PlacementTarget: Border { DataContext: DesktopItem item } } }) return;
-        if (!_restoreItem(item)) return;
-        _group.Items.Remove(item);
-        _group.NotifyCount();
-        await _save();
-    }
-
     private void Rename()
     {
+        _openManager();
         var dialog = new TextPromptWindow(LocalizationService.Current.Get("Prompt_RenameGroup"), LocalizationService.Current.Get("Prompt_GroupName"), _group.Name) { Owner = System.Windows.Application.Current.MainWindow };
         if (dialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(dialog.Result)) _group.Name = dialog.Result.Trim();
     }
@@ -483,5 +619,15 @@ public partial class DesktopGroupWindow : Window
         if (MessageBox.Show(LocalizationService.Current.Format("Message_DeleteGroup", _group.Name), LocalizationService.Current.Get("Message_DeleteGroupTitle"),
                 MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
             await _delete(_group);
+    }
+
+    private static bool IsInsideButton(DependencyObject? source)
+    {
+        while (source is not null)
+        {
+            if (source is ButtonBase) return true;
+            source = source is FrameworkContentElement content ? content.Parent : VisualTreeHelper.GetParent(source);
+        }
+        return false;
     }
 }
