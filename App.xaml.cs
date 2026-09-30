@@ -83,7 +83,7 @@ public partial class App : System.Windows.Application
             if (!_groupWindows.TryGetValue(group.Id, out var window))
             {
                 window = new DesktopGroupWindow(group, Config, SaveAsync, OpenManager, DeleteGroupAsync,
-                    MoveItemBetweenGroupsAsync, _desktopVisibility.Hide, _desktopVisibility.Restore);
+                    MoveItemBetweenGroupsAsync, _desktopVisibility.Hide, RestoreDesktopItem);
                 _groupWindows[group.Id] = window;
                 window.Show();
             }
@@ -185,11 +185,26 @@ public partial class App : System.Windows.Application
         }
         else
         {
-            if (!_desktopVisibility.Restore(item)) return;
+            if (!RestoreDesktopItem(item)) return;
             source.Items.Remove(item);
         }
         source.NotifyCount();
         await SaveAsync();
+    }
+
+    private bool RestoreDesktopItem(DesktopItem item)
+    {
+        var l = LocalizationService.Current;
+        if (!_desktopVisibility.Restore(item))
+        {
+            MessageBox.Show(l.Get("Message_RemoveFailed") + Environment.NewLine + _desktopVisibility.LastRestoreError,
+                l.Get("Message_RemoveFailedTitle"), MessageBoxButton.OK, MessageBoxImage.Warning);
+            return false;
+        }
+        if (_desktopVisibility.RestoredToPersonalDesktop)
+            MessageBox.Show(l.Format("Restore_PersonalDesktop", item.Path), l.Get("Restore_PersonalDesktopTitle"),
+                MessageBoxButton.OK, MessageBoxImage.Information);
+        return true;
     }
 
     private async Task<LayoutSnapshot> CreateSnapshotAsync(string name, bool automatic = false) =>

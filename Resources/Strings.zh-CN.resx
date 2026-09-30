@@ -213,4 +213,15 @@
   <data name="Installer_UninstalledTitle" xml:space="preserve"><value>卸载完成</value></data>
   <data name="Appearance_Language" xml:space="preserve"><value>应用语言</value></data>
   <data name="Appearance_RegionFormat" xml:space="preserve"><value>区域格式</value></data>
+  <data name="Restore_OriginalPathMissing" xml:space="preserve"><value>快捷方式的原始位置记录缺失，已保留分组项目。</value></data>
+  <data name="Restore_ShortcutMissing" xml:space="preserve"><value>暂存的快捷方式不存在或无法访问，已保留分组项目。</value></data>
+  <data name="Restore_PersonalDesktopTitle" xml:space="preserve"><value>已恢复到个人桌面</value></data>
+  <data name="Restore_PersonalDesktop" xml:space="preserve"><value>无法将快捷方式放回公共桌面，已安全恢复到你的个人桌面：
+{0}</value></data>
+  <data name="Icon_Finance" xml:space="preserve"><value>财经</value></data>
+  <data name="Icon_Proxy" xml:space="preserve"><value>代理工具</value></data>
+  <data name="Icon_Excel" xml:space="preserve"><value>Excel</value></data>
+  <data name="Icon_PowerPoint" xml:space="preserve"><value>PPT</value></data>
+  <data name="Icon_Pdf" xml:space="preserve"><value>PDF</value></data>
+  <data name="Icon_Word" xml:space="preserve"><value>Word</value></data>
 </root>

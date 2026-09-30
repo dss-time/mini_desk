@@ -466,11 +466,7 @@ public partial class DesktopGroupWindow : Window
     private async void RemoveItem_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not MenuItem { Parent: ContextMenu { PlacementTarget: Border { DataContext: DesktopItem item } } }) return;
-        if (!_restoreItem(item))
-        {
-            MessageBox.Show(this, LocalizationService.Current.Get("Message_RemoveFailed"), LocalizationService.Current.Get("Message_RemoveFailedTitle"), MessageBoxButton.OK, MessageBoxImage.Warning);
-            return;
-        }
+        if (!_restoreItem(item)) return;
         _group.Items.Remove(item);
         _group.NotifyCount();
         await _save();

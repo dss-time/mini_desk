@@ -213,4 +213,15 @@
   <data name="Installer_UninstalledTitle" xml:space="preserve"><value>Uninstall complete</value></data>
   <data name="Appearance_Language" xml:space="preserve"><value>App language</value></data>
   <data name="Appearance_RegionFormat" xml:space="preserve"><value>Regional format</value></data>
+  <data name="Restore_OriginalPathMissing" xml:space="preserve"><value>The original shortcut location is missing. The group entry has been kept.</value></data>
+  <data name="Restore_ShortcutMissing" xml:space="preserve"><value>The stored shortcut cannot be found or accessed. The group entry has been kept.</value></data>
+  <data name="Restore_PersonalDesktopTitle" xml:space="preserve"><value>Restored to your desktop</value></data>
+  <data name="Restore_PersonalDesktop" xml:space="preserve"><value>The shortcut could not be restored to the public desktop. It was restored to your personal desktop instead:
+{0}</value></data>
+  <data name="Icon_Finance" xml:space="preserve"><value>Finance</value></data>
+  <data name="Icon_Proxy" xml:space="preserve"><value>Proxy tools</value></data>
+  <data name="Icon_Excel" xml:space="preserve"><value>Excel</value></data>
+  <data name="Icon_PowerPoint" xml:space="preserve"><value>PPT</value></data>
+  <data name="Icon_Pdf" xml:space="preserve"><value>PDF</value></data>
+  <data name="Icon_Word" xml:space="preserve"><value>Word</value></data>
 </root>

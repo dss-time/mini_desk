@@ -1,6 +1,8 @@
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using System.Windows;
 using System.Windows.Automation.Peers;
 using System.Windows.Automation.Provider;
@@ -83,6 +85,61 @@ public static class SelfTestRunner
             Assert(visibility.Restore(file), "普通桌面文件未恢复");
             Assert(File.Exists(filePath) && !File.GetAttributes(filePath).HasFlag(FileAttributes.Hidden) && File.ReadAllText(filePath) == "real-file-data",
                 "普通桌面文件属性或内容未恢复");
+            return Task.CompletedTask;
+        });
+
+        await Run(results, "公共桌面恢复权限、同名冲突与失败保留", () =>
+        {
+            var userFolder = Directory.CreateDirectory(Path.Combine(tempRoot, "RestoreUserDesktop"));
+            var publicFolder = Directory.CreateDirectory(Path.Combine(tempRoot, "RestorePublicDesktop"));
+            var storage = Path.Combine(tempRoot, "RestoreStorage");
+            var service = new DesktopVisibilityService(userFolder.FullName, publicFolder.FullName, storage);
+            var original = Path.Combine(publicFolder.FullName, "shortcut.lnk");
+            File.WriteAllText(original, "original-shortcut-bytes");
+            var item = new DesktopItem { Name = "shortcut", Path = original };
+            Assert(service.Hide(item), "权限测试快捷方式未暂存");
+            var publicAcl = publicFolder.GetAccessControl();
+            var userAcl = userFolder.GetAccessControl();
+            var denyCreation = new FileSystemAccessRule(WindowsIdentity.GetCurrent().User!,
+                FileSystemRights.CreateFiles, AccessControlType.Deny);
+            try
+            {
+                var deniedPublicAcl = publicFolder.GetAccessControl();
+                deniedPublicAcl.AddAccessRule(denyCreation);
+                publicFolder.SetAccessControl(deniedPublicAcl);
+                var conflict = Path.Combine(userFolder.FullName, "shortcut.lnk");
+                File.WriteAllText(conflict, "existing-user-shortcut");
+                Assert(service.Restore(item) && service.RestoredToPersonalDesktop,
+                    "公共桌面无创建权限时未恢复到个人桌面");
+                Assert(Path.GetDirectoryName(item.Path) == userFolder.FullName && item.Path != conflict &&
+                       File.ReadAllText(item.Path) == "original-shortcut-bytes" &&
+                       File.ReadAllText(conflict) == "existing-user-shortcut" && item.VisibilityMode == DesktopVisibilityMode.None,
+                    "恢复快捷方式覆盖了同名文件或损坏了内容");
+
+                // Both destinations unavailable must keep the only copy and recovery metadata.
+                var second = new DesktopItem { Name = "blocked", Path = Path.Combine(storage, "blocked.lnk"),
+                    OriginalDesktopPath = Path.Combine(publicFolder.FullName, "blocked.lnk"),
+                    VisibilityMode = DesktopVisibilityMode.ManagedShortcut };
+                File.WriteAllText(second.Path, "keep-this-copy");
+                var deniedUserAcl = userFolder.GetAccessControl();
+                deniedUserAcl.AddAccessRule(denyCreation);
+                userFolder.SetAccessControl(deniedUserAcl);
+                var storedPath = second.Path;
+                var originalPath = second.OriginalDesktopPath;
+                Assert(!service.Restore(second) && !string.IsNullOrWhiteSpace(service.LastRestoreError) &&
+                       second.Path == storedPath && second.OriginalDesktopPath == originalPath &&
+                       second.VisibilityMode == DesktopVisibilityMode.ManagedShortcut && File.ReadAllText(storedPath) == "keep-this-copy",
+                    "恢复失败清除了归属或丢失了快捷方式");
+            }
+            finally
+            {
+                publicFolder.SetAccessControl(publicAcl);
+                userFolder.SetAccessControl(userAcl);
+            }
+            var missing = new DesktopItem { Path = Path.Combine(storage, "missing.lnk"),
+                OriginalDesktopPath = original, VisibilityMode = DesktopVisibilityMode.ManagedShortcut };
+            Assert(!service.Restore(missing) && missing.VisibilityMode == DesktopVisibilityMode.ManagedShortcut &&
+                   missing.OriginalDesktopPath == original, "缺失快捷方式被错误标记为恢复成功");
             return Task.CompletedTask;
         });
 
@@ -397,6 +454,20 @@ public static class SelfTestRunner
             System.Windows.Application.Current.Dispatcher.BeginInvoke(new Action(() =>
             {
                 initialButtonDisabled = !dialog.CreateButton.IsEnabled;
+                Assert(dialog.IconChoices.Items.Count == 18, "内置图标数量错误");
+                Assert(ScrollViewer.GetVerticalScrollBarVisibility(dialog.IconChoices) == ScrollBarVisibility.Auto,
+                    "新增图标无法滚动访问");
+                var typeface = new Typeface(new FontFamily("Segoe Fluent Icons"), FontStyles.Normal, FontWeights.Normal, FontStretches.Normal);
+                Assert(typeface.TryGetGlyphTypeface(out var glyphTypeface), "系统图标字体不可用");
+                for (var index = 12; index < 18; index++)
+                {
+                    dialog.IconChoices.SelectedIndex = index;
+                    var choice = (CreateGroupWindow.IconChoice)dialog.IconChoices.SelectedItem;
+                    Assert(glyphTypeface.CharacterToGlyphMap.ContainsKey(choice.Glyph[0]), "新增系统图标缺少字形");
+                    Assert(dialog.PreviewName.Text == choice.Name && dialog.PreviewGlyph.Text == choice.Glyph,
+                        "新增图标预览不同步");
+                }
+                dialog.IconChoices.SelectedIndex = 0;
                 SaveVisual(dialog, Path.Combine(Environment.CurrentDirectory, "implementation-create-group-dialog.png"));
                 dialog.GroupNameBox.Text = "设计素材";
                 dialog.IconChoices.SelectedIndex = 7;
@@ -420,6 +491,30 @@ public static class SelfTestRunner
             System.Windows.Application.Current.Dispatcher.BeginInvoke(new Action(() => Invoke(cancelled.CancelButton)),
                 DispatcherPriority.ApplicationIdle);
             Assert(cancelled.ShowDialog() == false && cancelled.Result is null, "取消新建仍产生了分组结果");
+            var originalCulture = LocalizationService.Current.Culture.Name;
+            try
+            {
+                foreach (var culture in new[] { "zh-CN", "en-US" })
+                {
+                    LocalizationService.Current.SetCulture(culture);
+                    var builtInDialog = new CreateGroupWindow();
+                    CreateGroupWindow.IconChoice? selected = null;
+                    System.Windows.Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+                    {
+                        builtInDialog.IconChoices.SelectedIndex = 17;
+                        selected = (CreateGroupWindow.IconChoice)builtInDialog.IconChoices.SelectedItem;
+                        builtInDialog.IconChoices.ScrollIntoView(selected);
+                        builtInDialog.GroupNameBox.Text = selected.Name;
+                        SaveVisual(builtInDialog, Path.Combine(Environment.CurrentDirectory, $"implementation-create-icons-{culture}.png"));
+                        Invoke(builtInDialog.CreateButton);
+                    }), DispatcherPriority.ApplicationIdle);
+                    Assert(builtInDialog.ShowDialog() == true && builtInDialog.Result is { UploadPath: null } result &&
+                        result.Glyph == selected!.Glyph && result.Accent == selected.Accent, "内置图标创建结果错误");
+                    foreach (var key in new[] { "Icon_Finance", "Icon_Proxy", "Icon_Excel", "Icon_PowerPoint", "Icon_Pdf", "Icon_Word" })
+                        Assert(LocalizationService.Current.Get(key) != key, "新增图标缺少翻译");
+                }
+            }
+            finally { LocalizationService.Current.SetCulture(originalCulture); }
             return Task.CompletedTask;
         });
 

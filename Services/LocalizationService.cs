@@ -28,6 +28,7 @@ public sealed class LocalizationService : INotifyPropertyChanged
         "Prompt_RenameGroup", "Prompt_GroupName", "Prompt_CreateSnapshot", "Prompt_SnapshotName", "Prompt_DefaultSnapshot", "Prompt_RestoreSnapshot", "Prompt_RestoreSnapshotTitle", "Prompt_DeleteSnapshot", "Prompt_DeleteSnapshotTitle", "Snapshot_BeforeDelete", "Snapshot_BeforeRestore",
         "Default_NewGroup", "Default_Music", "Default_Development", "Default_Communication", "Default_Office", "Default_TemporaryFiles",
         "Icon_Browser", "Icon_Game", "Icon_Picture", "Icon_Document", "Icon_Download", "Icon_Favorite", "Icon_Custom",
+        "Icon_Finance", "Icon_Proxy", "Icon_Excel", "Icon_PowerPoint", "Icon_Pdf", "Icon_Word",
         "Upload_SelectTitle", "Upload_Filter", "Upload_PreviewFailed", "Snapshot_Contains", "Snapshot_GroupsSuffix", "Snapshot_IconsSuffix", "Snapshot_IconCountFormat",
         "Shell_Add", "Shell_NewGroup", "Error_IconMissing", "Error_IconFormat", "Error_IconSize", "Error_IconCorrupt", "Error_ExecutableMissing", "Default_Snapshot"
     ];

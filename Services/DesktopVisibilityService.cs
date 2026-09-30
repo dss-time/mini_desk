@@ -12,6 +12,8 @@ public sealed class DesktopVisibilityService
     private const uint ShcnfPathWFlush = 0x2005;
     private readonly string[] _desktopFolders;
     public string StorageFolder { get; }
+    public string? LastRestoreError { get; private set; }
+    public bool RestoredToPersonalDesktop { get; private set; }
 
     public DesktopVisibilityService(string? userDesktop = null, string? commonDesktop = null, string? storageFolder = null)
     {
@@ -67,19 +69,34 @@ public sealed class DesktopVisibilityService
 
     public bool Restore(DesktopItem item)
     {
+        LastRestoreError = null;
+        RestoredToPersonalDesktop = false;
         try
         {
             if (item.VisibilityMode == DesktopVisibilityMode.ManagedShortcut)
             {
                 var original = item.OriginalDesktopPath;
-                if (!string.IsNullOrWhiteSpace(original) && File.Exists(item.Path))
+                if (string.IsNullOrWhiteSpace(original))
+                    throw new InvalidOperationException(LocalizationService.Current.Get("Restore_OriginalPathMissing"));
+                if (!File.Exists(item.Path))
+                    throw new FileNotFoundException(LocalizationService.Current.Get("Restore_ShortcutMissing"), item.Path);
+                string destination;
+                try
                 {
-                    Directory.CreateDirectory(Path.GetDirectoryName(original)!);
-                    var destination = AvailableDestination(original);
-                    File.Move(item.Path, destination, false);
-                    item.Path = destination;
-                    NotifyCreated(destination);
+                    destination = MoveShortcut(item.Path, original);
                 }
+                catch (Exception ex) when ((ex is UnauthorizedAccessException || ex is IOException) &&
+                    string.Equals(NormalizeFolder(Path.GetDirectoryName(original)!), _desktopFolders[1], StringComparison.OrdinalIgnoreCase) &&
+                    !string.Equals(_desktopFolders[0], _desktopFolders[1], StringComparison.OrdinalIgnoreCase))
+                {
+                    // Public Desktop may permit deletion but not creation for this user.
+                    // Move without overwriting; only commit model changes after success.
+                    Log("restore-public-fallback", item.Path, ex);
+                    destination = MoveShortcut(item.Path, Path.Combine(_desktopFolders[0], Path.GetFileName(original)));
+                    RestoredToPersonalDesktop = true;
+                }
+                item.Path = destination;
+                NotifyCreated(destination);
             }
             else if (item.VisibilityMode == DesktopVisibilityMode.HiddenAttribute &&
                      (File.Exists(item.Path) || Directory.Exists(item.Path)))
@@ -94,9 +111,18 @@ public sealed class DesktopVisibilityService
         }
         catch (Exception ex)
         {
+            LastRestoreError = ex.GetBaseException().Message;
             Log("restore", item.Path, ex);
             return false;
         }
+    }
+
+    private static string MoveShortcut(string source, string requested)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(requested)!);
+        var destination = AvailableDestination(requested);
+        File.Move(source, destination, false);
+        return destination;
     }
 
     public void Reconcile(WorkspaceConfig config)

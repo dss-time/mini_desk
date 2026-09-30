@@ -35,7 +35,13 @@ public partial class CreateGroupWindow : Window
             new IconChoice(l.Get("Icon_Document"), "\uE8A5", "#1FB0DA"),
             new IconChoice(l.Get("Icon_Download"), "\uE896", "#20B878"),
             new IconChoice(l.Get("Icon_Favorite"), "\uE734", "#FF7545"),
-            new IconChoice(l.Get("Icon_Custom"), "\uE712", "#8A96A8")
+            new IconChoice(l.Get("Icon_Custom"), "\uE712", "#8A96A8"),
+            new IconChoice(l.Get("Icon_Finance"), "\uE9D2", "#D99B28"),
+            new IconChoice(l.Get("Icon_Proxy"), "\uE705", "#5967D8"),
+            new IconChoice(l.Get("Icon_Excel"), "\uF0E2", "#217346"),
+            new IconChoice(l.Get("Icon_PowerPoint"), "\uE786", "#D24726"),
+            new IconChoice(l.Get("Icon_Pdf"), "\uEA90", "#DF3B38"),
+            new IconChoice(l.Get("Icon_Word"), "\uE7C3", "#2B579A")
         };
         IconChoices.SelectedIndex = 0;
     }
