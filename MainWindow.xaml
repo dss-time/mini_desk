@@ -24,7 +24,7 @@
             <Grid Margin="18,24,18,20">
                 <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="38" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
                 <StackPanel Orientation="Horizontal" Margin="4,0">
-                    <ui:SoftBorder Style="{StaticResource GroupIconTile}" Width="38" Height="38"><Image Source="{StaticResource SoftMiniDeskMark}" Margin="8" /></ui:SoftBorder>
+                    <Image x:Name="ApplicationBrandIcon" Source="/Assets/MiniDesk-256.png" Width="38" Height="38" Stretch="Uniform" AutomationProperties.Name="MiniDesk" />
                     <TextBlock Text="MiniDesk" Foreground="{DynamicResource TextBrush}" FontSize="16" FontWeight="Medium" VerticalAlignment="Center" Margin="12,0,0,0" />
                 </StackPanel>
                 <StackPanel Grid.Row="2">

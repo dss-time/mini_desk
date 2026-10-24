@@ -101,7 +101,7 @@ English: Right-click a grouped item to open it, move it to another group (or cre
 
 在“外观设置 → 语言与区域 → 应用语言”中选择简体中文或 English，界面立即切换并保存。“区域格式”独立控制日期和数字格式，不改变界面语言。
 
-最新修复说明见 [v1.0.4](Docs/Releases/v1.0.4.md)。
+最新修复说明见 [v1.0.5](Docs/Releases/v1.0.5.md)。
 
 ## English
 

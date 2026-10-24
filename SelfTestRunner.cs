@@ -426,6 +426,19 @@ public static class SelfTestRunner
             Assert((style & 0x40000000L) == 0, "分类窗口仍被错误改成 WS_CHILD");
             Assert(window.ExpandedCard.Background is SolidColorBrush transparent && transparent.Color.A == 0,
                 "0% 面板透明度未传递到分类窗口");
+            void AssertUniformPanelAlpha(byte expected)
+            {
+                var bitmap = new RenderTargetBitmap((int)window.ExpandedCard.ActualWidth,
+                    (int)window.ExpandedCard.ActualHeight, 96, 96, PixelFormats.Pbgra32);
+                bitmap.Render(window.ExpandedCard);
+                var headerPixel = new byte[4];
+                var bodyPixel = new byte[4];
+                bitmap.CopyPixels(new Int32Rect(160, 15, 1, 1), headerPixel, 4, 0);
+                bitmap.CopyPixels(new Int32Rect(160, 155, 1, 1), bodyPixel, 4, 0);
+                Assert(headerPixel[3] == expected && bodyPixel[3] == expected,
+                    $"标题栏与面板透明度不一致：标题 {headerPixel[3]}，面板 {bodyPixel[3]}，预期 {expected}");
+            }
+            AssertUniformPanelAlpha(0);
             config.PanelOpacity = 0.01;
             window.RefreshVisualState();
             Assert(window.ExpandedCard.Background is SolidColorBrush onePercent && onePercent.Color.A == 3,
@@ -434,6 +447,7 @@ public static class SelfTestRunner
             window.RefreshVisualState();
             Assert(window.ExpandedCard.Background is SolidColorBrush halfOpacity && halfOpacity.Color.A == 128,
                 "50% 面板透明度未按线性 Alpha 映射");
+            AssertUniformPanelAlpha(128);
             config.PanelOpacity = 0.99;
             window.RefreshVisualState();
             Assert(window.ExpandedCard.Background is SolidColorBrush nearOpaque && nearOpaque.Color.A == 252,
