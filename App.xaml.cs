@@ -24,6 +24,7 @@ public partial class App : System.Windows.Application
     private MainWindow? _manager;
     private DesktopOrganizationService? _organization;
     private bool _organizationUiBusy;
+    private PreviewWorkspaceService? _previewWorkspace;
 
     public WorkspaceConfig Config { get; private set; } = new();
 
@@ -31,6 +32,33 @@ public partial class App : System.Windows.Application
     {
         base.OnStartup(e);
         LocalizationService.Current.SetCulture("zh-CN");
+        if (e.Args.Any(arg => string.Equals(arg, "--preview", StringComparison.OrdinalIgnoreCase)))
+        {
+            _previewWorkspace = new PreviewWorkspaceService();
+            Config = _previewWorkspace.Config;
+            _organization = _previewWorkspace.Organization;
+            _themeService = new AppThemeService();
+            _themeService.Apply(AppThemeMode.Light);
+            _manager = new MainWindow(Config, _previewWorkspace.SaveAsync, () => { }, _previewWorkspace.DeleteGroupAsync,
+            snapshotService: _previewWorkspace.Snapshots,
+            createSnapshot: _previewWorkspace.CreateSnapshotAsync,
+            restoreSnapshot: async snapshot =>
+            {
+                await _previewWorkspace.RestoreSnapshotAsync(snapshot);
+                _themeService.Apply(Config.ThemeMode);
+            },
+            organize: OrganizeDesktopAsync, themeChanged: mode =>
+            {
+                Config.ThemeMode = mode;
+                _themeService.Apply(mode);
+                _ = _previewWorkspace.SaveAsync();
+                _manager?.RefreshTheme();
+            }) { Title = "MiniDesk · 新拟物交互预览", IsPreview = true };
+            MainWindow = _manager;
+            _manager.Closed += (_, _) => { _themeService.Dispose(); Shutdown(); };
+            _manager.Show();
+            return;
+        }
         if (e.Args.Any(arg => string.Equals(arg, "--self-test", StringComparison.OrdinalIgnoreCase)))
         {
             var passed = await SelfTestRunner.RunAsync();
@@ -126,50 +154,49 @@ public partial class App : System.Windows.Application
 
     private async Task OrganizeDesktopAsync(bool undo)
     {
-        if (_organizationUiBusy || _organization is null || _manager is null) return;
+        if (_manager is null) return;
+        if (_organizationUiBusy) { _manager.ShowNotice(LocalizationService.Current.Get("Organize_Busy")); return; }
+        if (_organization is null) { _manager.ShowNotice(LocalizationService.Current.Get("Action_Unavailable")); return; }
         _organizationUiBusy = true;
         var manager = _manager;
         try
         {
             if (undo && Config.LastOrganization?.Entries.Count is not > 0)
-            { MessageBox.Show(manager, LocalizationService.Current.Get("Organize_NoUndo"), LocalizationService.Current.Get("Organize_Title")); return; }
+            { manager.ShowNotice(LocalizationService.Current.Get("Organize_NoUndo")); return; }
             if (!undo)
             {
-                manager.IsEnabled = false;
+                manager.SetOperationBusy(true, LocalizationService.Current.Get("Action_Scanning"));
                 List<OrganizationCandidate> candidates;
-                try { candidates = await DesktopOrganizationService.ScanDesktopAsync(Config); }
-                finally { manager.IsEnabled = true; }
+                candidates = _previewWorkspace is not null ? await _previewWorkspace.ScanAsync() : await DesktopOrganizationService.ScanDesktopAsync(Config);
+                manager.SetOperationBusy(false);
                 var dialog = new OrganizeDesktopWindow(Config, candidates) { Owner = manager };
                 manager.SetModalOverlay(true);
                 bool accepted;
                 try { accepted = dialog.ShowDialog() == true; }
                 finally { manager.SetModalOverlay(false); }
                 if (!accepted) return;
-                manager.IsEnabled = false;
+                manager.SetOperationBusy(true, LocalizationService.Current.Get("Organize_Busy"));
                 foreach (var window in _groupWindows.Values) window.IsEnabled = false;
                 var result = await _organization.ApplyAsync(Config, dialog.Candidates);
-                manager.IsEnabled = true;
-                MessageBox.Show(manager, LocalizationService.Current.Format("Organize_Result", result.Applied, result.Failed), LocalizationService.Current.Get("Organize_Title"));
+                manager.ShowNotice(LocalizationService.Current.Format("Organize_Result", result.Applied, result.Failed));
             }
             else
             {
-                manager.IsEnabled = false;
+                manager.SetOperationBusy(true, LocalizationService.Current.Get("Action_Undoing"));
                 foreach (var window in _groupWindows.Values) window.IsEnabled = false;
                 var result = await _organization.UndoAsync(Config);
-                manager.IsEnabled = true;
-                MessageBox.Show(manager, LocalizationService.Current.Format("Organize_UndoResult", result.Restored, result.Skipped), LocalizationService.Current.Get("Organize_Title"));
+                manager.ShowNotice(LocalizationService.Current.Format("Organize_UndoResult", result.Restored, result.Skipped));
             }
         }
         catch (Exception ex)
         {
-            manager.IsEnabled = true;
-            MessageBox.Show(manager, LocalizationService.Current.Format("Organize_Error", ex.Message), LocalizationService.Current.Get("Organize_Title"), MessageBoxButton.OK, MessageBoxImage.Warning);
+            manager.ShowNotice(LocalizationService.Current.Format("Organize_Error", ex.Message));
         }
         finally
         {
-            manager.IsEnabled = true;
+            manager.SetOperationBusy(false);
             foreach (var window in _groupWindows.Values) window.IsEnabled = true;
-            RefreshGroupWindows();
+            if (_previewWorkspace is null) RefreshGroupWindows();
             manager.RefreshData();
             _organizationUiBusy = false;
         }

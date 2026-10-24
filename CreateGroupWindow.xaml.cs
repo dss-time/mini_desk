@@ -10,7 +10,10 @@ namespace MiniDesk;
 
 public partial class CreateGroupWindow : Window
 {
-    public sealed record IconChoice(string Name, string Glyph, string Accent);
+    public sealed record IconChoice(string Name, string Glyph, string Accent)
+    {
+        public string IconPath => string.Empty;
+    }
     public sealed record CreationResult(string Name, string Glyph, string Accent, string? UploadPath,
         GroupDisplayState State, CollapseStyle CollapseStyle, bool ShowOnDesktop);
 
@@ -21,8 +24,28 @@ public partial class CreateGroupWindow : Window
     public CreateGroupWindow(CategoryGroup? editingIcon = null)
     {
         InitializeComponent();
+        DialogMotion.Attach(this);
         var l = LocalizationService.Current;
-        IconChoices.ItemsSource = new[]
+        IconChoices.ItemsSource = SystemIconChoices();
+        IconChoices.SelectedIndex = 0;
+        if (editingIcon is not null)
+        {
+            Title = l.Get("Context_ChangeIcon");
+            DialogHeading.Text = Title;
+            DialogSubtitle.Text = l.Get("Context_ChangeIconHint");
+            CreateButton.Content = l.Get("Common_Confirm");
+            StateSettings.Visibility = Visibility.Collapsed;
+            GroupNameBox.Text = editingIcon.Name;
+            GroupNameBox.IsReadOnly = true;
+            IconChoices.SelectedItem = IconChoices.Items.OfType<IconChoice>().FirstOrDefault(c => c.Glyph == editingIcon.Glyph && c.Accent == editingIcon.Accent) ?? IconChoices.Items[0];
+            if (!string.IsNullOrWhiteSpace(editingIcon.IconPath)) SetUploadedFile(editingIcon.IconPath);
+        }
+    }
+
+    internal static IReadOnlyList<IconChoice> SystemIconChoices()
+    {
+        var l = LocalizationService.Current;
+        return new[]
         {
             new IconChoice(l.Get("Default_Music"), "\uE8D6", "#F54474"),
             new IconChoice(l.Get("Default_Development"), "\uE943", "#2675F5"),
@@ -43,19 +66,6 @@ public partial class CreateGroupWindow : Window
             new IconChoice(l.Get("Icon_Pdf"), "\uEA90", "#DF3B38"),
             new IconChoice(l.Get("Icon_Word"), "\uE7C3", "#2B579A")
         };
-        IconChoices.SelectedIndex = 0;
-        if (editingIcon is not null)
-        {
-            Title = l.Get("Context_ChangeIcon");
-            DialogHeading.Text = Title;
-            DialogSubtitle.Text = l.Get("Context_ChangeIconHint");
-            CreateButton.Content = l.Get("Common_Confirm");
-            StateSettings.Visibility = Visibility.Collapsed;
-            GroupNameBox.Text = editingIcon.Name;
-            GroupNameBox.IsReadOnly = true;
-            IconChoices.SelectedItem = IconChoices.Items.OfType<IconChoice>().FirstOrDefault(c => c.Glyph == editingIcon.Glyph && c.Accent == editingIcon.Accent) ?? IconChoices.Items[0];
-            if (!string.IsNullOrWhiteSpace(editingIcon.IconPath)) SetUploadedFile(editingIcon.IconPath);
-        }
     }
 
     private IconChoice SelectedIcon => IconChoices.SelectedItem as IconChoice ??
@@ -80,7 +90,9 @@ public partial class CreateGroupWindow : Window
     {
         IconChoices.Visibility = Visibility.Visible;
         UploadPanel.Visibility = Visibility.Collapsed;
-        SystemTabIndicator.Background = Brushes.White;
+        Controls.SoftBorder.SetSelected(SystemTabButton, true);
+        Controls.SoftBorder.SetSelected(UploadTabButton, false);
+        SystemTabIndicator.Background = Brushes.Transparent;
         UploadTabIndicator.Background = Brushes.Transparent;
         SetTabColors(true);
         _useUpload = false;
@@ -92,7 +104,9 @@ public partial class CreateGroupWindow : Window
         IconChoices.Visibility = Visibility.Collapsed;
         UploadPanel.Visibility = Visibility.Visible;
         SystemTabIndicator.Background = Brushes.Transparent;
-        UploadTabIndicator.Background = Brushes.White;
+        Controls.SoftBorder.SetSelected(SystemTabButton, false);
+        Controls.SoftBorder.SetSelected(UploadTabButton, true);
+        UploadTabIndicator.Background = Brushes.Transparent;
         SetTabColors(false);
         _useUpload = !string.IsNullOrWhiteSpace(_uploadPath);
         UpdatePreview();
@@ -101,9 +115,9 @@ public partial class CreateGroupWindow : Window
     private void SetTabColors(bool systemSelected)
     {
         foreach (var text in FindVisualChildren<TextBlock>(SystemTabButton))
-            text.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString(systemSelected ? "#1769F7" : "#526681"));
+            text.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString(systemSelected ? "#5D4AD9" : "#596170"));
         foreach (var text in FindVisualChildren<TextBlock>(UploadTabButton))
-            text.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString(systemSelected ? "#526681" : "#1769F7"));
+            text.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString(systemSelected ? "#596170" : "#5D4AD9"));
     }
 
     private void ChooseIcon_Click(object sender, RoutedEventArgs e)
@@ -162,7 +176,8 @@ public partial class CreateGroupWindow : Window
         PreviewName.Text = string.IsNullOrWhiteSpace(GroupNameBox.Text) ? choice.Name : GroupNameBox.Text.Trim();
         PreviewGlyph.Text = choice.Glyph;
         PreviewGlyph.Tag = choice.Accent;
-        PreviewImage.Source = _useUpload && _uploadPath is not null ? GroupIconStorageService.LoadPreview(_uploadPath) : null;
+        PreviewImage.Source = _useUpload && _uploadPath is not null
+            ? GroupIconStorageService.LoadPreview(_uploadPath) : GroupSystemIconService.GetIcon(choice.Glyph);
         PreviewGlyph.Visibility = PreviewImage.Source is null ? Visibility.Visible : Visibility.Collapsed;
     }
 

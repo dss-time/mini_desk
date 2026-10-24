@@ -179,6 +179,144 @@ public static class SelfTestRunner
             return Task.CompletedTask;
         });
 
+        var motionDetail = string.Empty;
+        var beforeMotion = results.Count;
+        await Run(results, "弹窗首帧与动画响应", async () =>
+        {
+            var host = new MainWindow(new WorkspaceConfig(), () => Task.CompletedTask, () => { }, _ => Task.CompletedTask) { IsPreview = true };
+            host.Show();
+            await WaitUntil(() => host.GroupEditor.IsPrepared);
+            await Task.Delay(100);
+            var intervals = new List<double>();
+            var openingTimes = new List<double>();
+            var editor = host.GroupEditor;
+            var windowCount = System.Windows.Application.Current.Windows.Count;
+            try
+            {
+                for (var attempt = 0; attempt < 6; attempt++)
+                {
+                    var clock = System.Diagnostics.Stopwatch.StartNew();
+                    double? previous = null;
+                    double firstFrame = 0;
+                    EventHandler rendering = (_, args) =>
+                    {
+                        if (firstFrame == 0) firstFrame = clock.Elapsed.TotalMilliseconds;
+                        var time = ((RenderingEventArgs)args).RenderingTime.TotalMilliseconds;
+                        if (previous is double last && time > last) intervals.Add(time - last);
+                        previous = time;
+                    };
+                    CompositionTarget.Rendering += rendering;
+                    host.OpenGroupPanel();
+                    Assert(host.IsGroupPanelOpen && host.CreateGroupLayer.IsHitTestVisible, "点击后没有立即响应");
+                    Assert(System.Windows.Application.Current.Windows.Count == windowCount, "打开面板仍然创建了独立窗口");
+                    Assert(ReferenceEquals(editor, host.GroupEditor), "反复打开没有复用同一个表单");
+                    Assert(editor.NameInput.IsKeyboardFocused, "打开后名称输入框未获得焦点");
+                    await Task.Delay(380);
+                    CompositionTarget.Rendering -= rendering;
+                    Assert(firstFrame > 0, "面板没有进入首个渲染帧");
+                    Assert(host.CreateGroupLayer.Opacity > .99, "打开过渡没有完成");
+                    openingTimes.Add(firstFrame);
+                    if (attempt == 0) SaveVisual(host, Path.Combine(Environment.CurrentDirectory, "implementation-inline-create-group.png"));
+                    host.CloseGroupPanel();
+                    Assert(host.WorkspaceContent.IsHitTestVisible, "关闭面板后后台仍不能操作");
+                    await Task.Delay(320);
+                }
+                var ordered = intervals.OrderBy(x => x).ToArray();
+                var p95 = ordered.Length == 0 ? 0 : ordered[(int)((ordered.Length - 1) * .95)];
+                Assert(openingTimes.Max() < 100 && p95 < 35, $"面板仍有卡顿：首帧最大 {openingTimes.Max():0.0} ms，帧间隔 P95 {p95:0.0} ms；Tier {RenderCapability.Tier >> 16}；间隔 {string.Join(",", intervals.Select(x => x.ToString("0")))}");
+                motionDetail = $"连续开关 6 次；首次渲染 {openingTimes[0]:0.0} ms，最大 {openingTimes.Max():0.0} ms；帧间隔 P95 {p95:0.0} ms；未创建窗口且表单被复用";
+            }
+            finally { host.Close(); }
+        });
+        if (results.Count > beforeMotion && results[^1].Passed) results[^1] = results[^1] with { Detail = motionDetail };
+
+        await Run(results, "窗口内新建面板输入、校验、取消与快速重开", async () =>
+        {
+            var config = new WorkspaceConfig();
+            var host = new MainWindow(config, () => Task.CompletedTask, () => { }, _ => Task.CompletedTask) { IsPreview = true };
+            host.Show();
+            try
+            {
+                await host.GroupEditor.PrepareAsync();
+                host.OpenGroupPanel();
+                var editor = host.GroupEditor;
+                Assert(!editor.CreateAction.IsEnabled, "空名称不应能创建");
+                editor.NameInput.Text = "   ";
+                Assert(!editor.CreateAction.IsEnabled, "空白名称不应能创建");
+                editor.NameInput.Text = "  流畅创建测试  ";
+                editor.IconList.SelectedIndex = 7;
+                editor.DisplayState.SelectedIndex = 2;
+                editor.ShowOnDesktop.IsChecked = false;
+                Assert(editor.CreateAction.IsEnabled && editor.NameHint.Visibility == Visibility.Collapsed, "名称输入未更新校验或占位符");
+                await Task.Delay(360);
+                SaveVisual(host, Path.Combine(Environment.CurrentDirectory, "implementation-inline-group-input.png"));
+                editor.CancelAction.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                Assert(config.Groups.Count == 0, "取消时创建了分组");
+                host.OpenGroupPanel(); // Reopen before the previous close animation completes.
+                await Task.Delay(360);
+                Assert(host.IsGroupPanelOpen && host.CreateGroupLayer.Visibility == Visibility.Visible, "旧关闭动画隐藏了重开的面板");
+                Assert(editor.NameInput.Text.Length == 0 && editor.DisplayState.SelectedIndex == 0 && editor.ShowOnDesktop.IsChecked == true,
+                    "重开时没有清空旧输入");
+                editor.NameInput.Text = "  新建图片  ";
+                editor.IconList.SelectedIndex = 7;
+                editor.DisplayState.SelectedIndex = 2;
+                editor.ShowOnDesktop.IsChecked = false;
+                editor.CreateAction.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                Assert(config.Groups.Count == 1 && config.Groups[0].Name == "新建图片" && !config.Groups[0].IsEnabled &&
+                       config.Groups[0].State == GroupDisplayState.Collapsed && config.Groups[0].CollapseStyle == CollapseStyle.IconOnly,
+                    "创建未保留名称、图标模式或桌面显示选择");
+                Assert(!host.IsGroupPanelOpen && host.WorkspaceContent.IsHitTestVisible, "创建后页面未恢复操作");
+            }
+            finally { host.Close(); }
+        });
+
+        await Run(results, "预览快照创建、整理、撤销和恢复使用真实服务", async () =>
+        {
+            var workspace = new PreviewWorkspaceService(Path.Combine(tempRoot, "FunctionalPreview"));
+            var snapshot = await workspace.CreateSnapshotAsync("整理前", false);
+            Assert((await workspace.Snapshots.ListAsync()).Count == 1, "预览快照未写入本地存储");
+            var candidates = await workspace.ScanAsync();
+            Assert(candidates.Count == 3 && candidates.All(c => c.Path.StartsWith(workspace.DesktopFolder)), "预览扫描越出了示例桌面");
+            var applied = await workspace.Organization.ApplyAsync(workspace.Config, candidates);
+            Assert(applied.Applied == 2 && workspace.Config.Groups.Sum(g => g.Items.Count) == 2, "示例项目没有实际加入分组");
+            Assert((await workspace.Snapshots.ListAsync()).Count == 2, "整理前未创建自动快照");
+            var undone = await workspace.Organization.UndoAsync(workspace.Config);
+            Assert(undone.Restored == 2 && workspace.Config.Groups.All(g => g.Items.Count == 0), "预览撤销没有恢复示例桌面");
+            Assert(candidates.All(c => File.Exists(c.Path) && !File.GetAttributes(c.Path).HasFlag(FileAttributes.Hidden)), "撤销后示例文件未恢复可见");
+            await workspace.Organization.ApplyAsync(workspace.Config, await workspace.ScanAsync());
+            await workspace.RestoreSnapshotAsync(snapshot);
+            Assert(workspace.Config.Groups.Count == 3 && workspace.Config.Groups.All(g => g.Items.Count == 0), "预览快照没有恢复分组布局");
+        });
+
+        await Run(results, "创建快照显示成功、空状态与失败反馈", async () =>
+        {
+            var workspace = new PreviewWorkspaceService(Path.Combine(tempRoot, "SnapshotFeedback"));
+            var fail = false;
+            var window = new MainWindow(workspace.Config, workspace.SaveAsync, () => { }, workspace.DeleteGroupAsync,
+                snapshotService: workspace.Snapshots,
+                createSnapshot: (name, automatic) => fail ? Task.FromException<LayoutSnapshot>(new IOException("模拟保存失败")) : workspace.CreateSnapshotAsync(name, automatic)) { IsPreview = true };
+            try
+            {
+                window.Show(); await Idle();
+                Invoke(window.SnapshotsNav);
+                await WaitUntil(() => window.SnapshotEmptyState.IsVisible);
+                SchedulePrompt("可恢复的布局");
+                Invoke(window.CreateSnapshotButton);
+                await WaitUntil(() => window.SnapshotList.Items.Count == 1 && window.CreateSnapshotButton.IsEnabled);
+                Assert(window.OperationStatus.Text == LocalizationService.Current.Get("Action_SnapshotCreated"), "保存后没有成功反馈");
+                Assert(!window.SnapshotEmptyState.IsVisible, "快照列表不为空时仍显示空状态");
+                SaveVisual(window, Path.Combine(Environment.CurrentDirectory, "implementation-snapshot-feedback.png"));
+                fail = true;
+                SchedulePrompt("保存失败测试");
+                Invoke(window.CreateSnapshotButton);
+                await WaitUntil(() => window.OperationStatus.Text.Contains("模拟保存失败") && window.CreateSnapshotButton.IsEnabled);
+                Assert(window.SnapshotList.Items.Count == 1, "失败操作影响了已有快照");
+                Invoke(window.GroupUndoButton); await Idle();
+                Assert(window.OperationNotice.IsVisible, "不可用操作仍然无提示返回");
+            }
+            finally { window.Close(); }
+        });
+
         await Run(results, "管理中心导航与批量状态按钮", async () =>
         {
             var config = new WorkspaceConfig();
@@ -200,6 +338,11 @@ public static class SelfTestRunner
             Invoke(window.GroupsNav); await Idle(); Assert(window.GroupsPage.Visibility == Visibility.Visible, "分组管理导航不可用");
             SaveVisual(window, Path.Combine(Environment.CurrentDirectory, "implementation-groups-actions-fixed.png"));
             Invoke(window.AppearanceNav); await Idle(); Assert(window.AppearancePage.Visibility == Visibility.Visible, "外观设置导航不可用");
+            foreach (var thumbnail in new[] { window.CapsuleStyleIcon, window.VerticalStyleIcon, window.IconOnlyStyleIcon })
+            {
+                Assert(FindVisualChildren<Image>(thumbnail).Any(image => image.Source is not null && image.IsVisible && image.ActualWidth > 0),
+                    "收起样式缩略图未显示对应分组图标");
+            }
             SaveVisual(window, Path.Combine(Environment.CurrentDirectory, "implementation-appearance-redesign.png"));
             Assert(window.MonitorList.Items.Count == DisplayTopologyService.Current.Monitors.Count && window.MonitorList.Items.Count > 0,
                 "外观页未显示真实的 Windows 显示器列表");
@@ -250,13 +393,15 @@ public static class SelfTestRunner
             Invoke(window.HomeNav); await Idle(); Assert(window.HomePage.Visibility == Visibility.Visible, "首页导航不可用");
             SaveVisual(window, Path.Combine(Environment.CurrentDirectory, "implementation-home-redesign.png"));
             Invoke(window.GroupsNav); await Idle();
-            ScheduleCreateGroup("自动新建组");
-            Invoke(window.NewGroupButton); await Idle();
+            var creation = ScheduleCreateGroup("自动新建组");
+            Invoke(window.NewGroupButton);
+            await creation;
+            await WaitUntil(() => config.Groups.Any(item => item.Name == "自动新建组"));
             Assert(config.Groups.Any(item => item.Name == "自动新建组"), "新建分组按钮未创建分组");
-            Assert(window.ModalOverlay.Visibility == Visibility.Collapsed, "新建完成后背景遮罩未关闭");
+            Assert(!window.IsGroupPanelOpen && !window.CreateGroupLayer.IsHitTestVisible, "新建完成后背景遮罩未释放点击");
             var renameButton = FindVisualChildren<Button>(window).First(button => Equals(button.ToolTip, "重命名") && ReferenceEquals(button.DataContext, group));
             SchedulePrompt("已重命名");
-            Invoke(renameButton); await Idle();
+            Invoke(renameButton); await WaitUntil(() => group.Name == "已重命名");
             Assert(group.Name == "已重命名", "重命名按钮未修改名称");
             Invoke(window.CollapseAllButton); await Idle(); Assert(group.State == GroupDisplayState.Collapsed, "全部收起未生效");
             Invoke(window.ExpandAllButton); await Idle(); Assert(group.State == GroupDisplayState.Expanded, "全部展开未生效");
@@ -425,6 +570,9 @@ public static class SelfTestRunner
             {
                 prompt.UpdateLayout();
                 layoutValid = prompt.ActualHeight >= 245 && prompt.Input.ActualHeight >= 40;
+                Assert(prompt.Input.SelectionTextBrush is SolidColorBrush selectedText &&
+                    prompt.Input.Foreground is SolidColorBrush normalText && selectedText.Color == normalText.Color,
+                    "浅色选区中的文字应保持可读");
                 SaveVisual(prompt, Path.Combine(Environment.CurrentDirectory, "implementation-text-input-fixed.png"));
                 prompt.Input.Text = "新名称";
                 Invoke(prompt.ConfirmButton);
@@ -468,6 +616,7 @@ public static class SelfTestRunner
                     Assert(glyphTypeface.CharacterToGlyphMap.ContainsKey(choice.Glyph[0]), "新增系统图标缺少字形");
                     Assert(dialog.PreviewName.Text == choice.Name && dialog.PreviewGlyph.Text == choice.Glyph,
                         "新增图标预览不同步");
+                    Assert(dialog.PreviewImage.Source is not null, "内置选项未加载 Windows 系统图标");
                 }
                 dialog.IconChoices.SelectedIndex = 0;
                 SaveVisual(dialog, Path.Combine(Environment.CurrentDirectory, "implementation-create-group-dialog.png"));
@@ -852,6 +1001,8 @@ public static class SelfTestRunner
 
     private static async Task Run(List<Result> results, string name, Func<Task> test)
     {
+        var filter = Environment.GetEnvironmentVariable("MINIDESK_SELFTEST_FILTER");
+        if (!string.IsNullOrWhiteSpace(filter) && !name.Contains(filter, StringComparison.OrdinalIgnoreCase)) return;
         try
         {
             await test();
@@ -873,7 +1024,12 @@ public static class SelfTestRunner
         var peer = new ButtonAutomationPeer(button);
         var provider = (IInvokeProvider?)peer.GetPattern(PatternInterface.Invoke)
                        ?? throw new InvalidOperationException($"按钮 {button.Name} 不支持 Invoke");
-        provider.Invoke();
+        // UIA posts an asynchronous click. For modal buttons, handle the click on
+        // this dispatcher turn so it cannot arrive after ShowDialog has returned.
+        if (Window.GetWindow(button) is CreateGroupWindow or TextPromptWindow)
+            button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        else
+            provider.Invoke();
     }
 
     private static void Invoke(MenuItem item)
@@ -891,24 +1047,44 @@ public static class SelfTestRunner
             var prompt = System.Windows.Application.Current.Windows.OfType<TextPromptWindow>().LastOrDefault(window => window.IsVisible)
                          ?? throw new InvalidOperationException("未找到文本输入对话框");
             prompt.Input.Text = value;
-            Invoke(prompt.ConfirmButton);
+            // Complete the modal before another ApplicationIdle continuation can
+            // resume the owner test and close the dialog ahead of an async UIA click.
+            prompt.ConfirmButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         }), DispatcherPriority.ApplicationIdle);
     }
 
-    private static void ScheduleCreateGroup(string value)
+    private static Task ScheduleCreateGroup(string value)
     {
-        System.Windows.Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+        var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        System.Windows.Application.Current.Dispatcher.BeginInvoke(new Action(async () =>
         {
-            var dialog = System.Windows.Application.Current.Windows.OfType<CreateGroupWindow>().LastOrDefault(window => window.IsVisible)
-                         ?? throw new InvalidOperationException("未找到新建分组弹窗");
-            if (dialog.Owner is MainWindow owner)
+            try
             {
-                Assert(owner.ModalOverlay.Visibility == Visibility.Visible, "新建分组时背景遮罩未显示");
+            await WaitUntil(() => System.Windows.Application.Current.Windows.OfType<MainWindow>().Any(w => w.IsGroupPanelOpen));
+            var owner = System.Windows.Application.Current.Windows.OfType<MainWindow>().Last(w => w.IsGroupPanelOpen);
+            await WaitUntil(() => owner.GroupEditor.IsPrepared);
+                Assert(owner.CreateGroupBackdrop.Background is SolidColorBrush veil && veil.Color.A <= 40, "面板遮罩不应遮住后台");
+                Assert(owner.GroupsPage.Visibility == Visibility.Visible && owner.GroupList.Items.Count > 0,
+                    "弹窗打开后分组页面及列表应保留");
                 SaveVisual(owner, Path.Combine(Environment.CurrentDirectory, "implementation-create-group-overlay.png"));
+            owner.GroupEditor.NameInput.Text = value;
+            owner.GroupEditor.CreateAction.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            completion.SetResult();
             }
-            dialog.GroupNameBox.Text = value;
-            Invoke(dialog.CreateButton);
+            catch (Exception ex) { completion.SetException(ex); }
         }), DispatcherPriority.ApplicationIdle);
+        return completion.Task;
+    }
+
+    private static async Task WaitUntil(Func<bool> condition)
+    {
+        var timeout = System.Diagnostics.Stopwatch.StartNew();
+        while (!condition())
+        {
+            if (timeout.Elapsed > TimeSpan.FromSeconds(12)) throw new TimeoutException("界面操作未在预期时间内完成");
+            await Task.Delay(16);
+        }
+        await Idle();
     }
 
     private static Task Idle() => System.Windows.Application.Current.Dispatcher.InvokeAsync(
@@ -928,6 +1104,14 @@ public static class SelfTestRunner
 
     private static void SaveElement(FrameworkElement window, string path)
     {
+        // Capture the settled content; motion itself is exercised separately.
+        if (window is CreateGroupWindow or TextPromptWindow or OrganizeDesktopWindow &&
+            window is Window { Content: FrameworkElement surface })
+        {
+            surface.BeginAnimation(UIElement.OpacityProperty, null);
+            surface.Opacity = 1;
+            surface.CacheMode = null;
+        }
         window.UpdateLayout();
         var dpi = VisualTreeHelper.GetDpi(window);
         var width = Math.Max(1, (int)Math.Ceiling(window.ActualWidth * dpi.DpiScaleX));

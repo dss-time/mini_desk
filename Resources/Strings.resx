@@ -237,4 +237,18 @@
   <data name="Context_ActionFailed" xml:space="preserve"><value>操作未完成，原有项目不会被直接删除。\n{0}</value></data>
   <data name="Context_GroupFull" xml:space="preserve"><value>这个分组没有空余位置，请先增大分组尺寸或选择其他分组。</value></data>
   <data name="Context_GroupDisabled" xml:space="preserve"><value>请先在分组管理中启用这个分组，再移入项目。</value></data>
+  <data name="Action_Failed" xml:space="preserve"><value>Could not complete the action: {0}</value></data>
+  <data name="Action_GroupCreated" xml:space="preserve"><value>Group created.</value></data>
+  <data name="Action_OpeningGroup" xml:space="preserve"><value>Opening new group…</value></data>
+  <data name="Action_RestoringSnapshot" xml:space="preserve"><value>Restoring layout…</value></data>
+  <data name="Action_SavingSnapshot" xml:space="preserve"><value>Saving layout snapshot…</value></data>
+  <data name="Action_Scanning" xml:space="preserve"><value>Scanning desktop items…</value></data>
+  <data name="Action_SnapshotCreated" xml:space="preserve"><value>Snapshot created. You can preview or restore this layout.</value></data>
+  <data name="Action_SnapshotRestored" xml:space="preserve"><value>Layout restored.</value></data>
+  <data name="Action_Unavailable" xml:space="preserve"><value>This action is unavailable. Reopen the app and try again.</value></data>
+  <data name="Action_Undoing" xml:space="preserve"><value>Undoing the last organization…</value></data>
+  <data name="Preview_DesktopHint" xml:space="preserve"><value>Try organization and undo on a sample desktop without changing your real desktop.</value></data>
+  <data name="Snapshots_Empty" xml:space="preserve"><value>No layout snapshots yet</value></data>
+  <data name="Snapshots_EmptyHint" xml:space="preserve"><value>Save your current groups and layout so you can restore them later.</value></data>
+  <data name="Panel_LoadingIcons" xml:space="preserve"><value>Preparing icons…</value></data>
 </root>

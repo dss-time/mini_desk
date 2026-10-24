@@ -16,6 +16,7 @@ public partial class OrganizeDesktopWindow : Window
     public OrganizeDesktopWindow(WorkspaceConfig config, List<OrganizationCandidate> candidates)
     {
         InitializeComponent();
+        DialogMotion.Attach(this);
         Candidates = candidates;
         var targets = DesktopOrganizationService.Targets(config).Where(t => t.Key == "existing" || t.GroupId is null).ToList();
         // An explicit desktop destination avoids a blank ComboBox for unrecognized items.

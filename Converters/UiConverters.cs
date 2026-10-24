@@ -30,6 +30,25 @@ public sealed class GroupIconConverter : IValueConverter
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => Binding.DoNothing;
 }
 
+public sealed class SystemGroupIconConverter : IValueConverter
+{
+    public object? Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
+        GroupSystemIconService.GetIcon(value as string);
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => Binding.DoNothing;
+}
+
+public sealed class GroupDisplayIconConverter : IMultiValueConverter
+{
+    public object? Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+    {
+        var uploaded = values.Length > 0 && values[0] is string path && !string.IsNullOrWhiteSpace(path)
+            ? GroupIconStorageService.LoadPreview(path) : null;
+        return uploaded ?? GroupSystemIconService.GetIcon(values.Length > 1 ? values[1] as string : null);
+    }
+    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture) =>
+        targetTypes.Select(_ => Binding.DoNothing).ToArray();
+}
+
 public sealed class CornerRadiusConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>

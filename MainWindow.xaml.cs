@@ -6,6 +6,9 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Media.Animation;
+using System.Windows.Threading;
+using System.Windows.Input;
 using MiniDesk.Models;
 using MiniDesk.Services;
 
@@ -13,6 +16,12 @@ namespace MiniDesk;
 
 public partial class MainWindow : Window
 {
+    internal bool IsPreview { get; init; }
+    private bool _openingGroup;
+    private int _groupPanelVersion;
+    internal bool IsGroupPanelOpen => _openingGroup;
+    private bool _snapshotBusy;
+    private readonly DispatcherTimer _noticeTimer = new() { Interval = TimeSpan.FromSeconds(7) };
     private readonly WorkspaceConfig _config;
     private readonly Func<Task> _save;
     private readonly Action _refreshWindows;
@@ -39,6 +48,10 @@ public partial class MainWindow : Window
         Action? refreshAppearance = null, Action? commitCornerRadius = null, Func<bool, Task>? organize = null)
     {
         InitializeComponent();
+        GroupEditor.Completed += GroupEditor_Completed;
+        SizeChanged += (_, _) => GroupPanelSurface.MaxHeight = Math.Max(320, RootGrid.ActualHeight - 40);
+        _noticeTimer.Tick += (_, _) => { _noticeTimer.Stop(); OperationNotice.Visibility = Visibility.Collapsed; };
+        Closed += (_, _) => _noticeTimer.Stop();
         _config = config;
         _organize = organize;
         _save = save;
@@ -70,6 +83,9 @@ public partial class MainWindow : Window
         MonitorList.ItemsSource = DisplayTopologyService.Current.Monitors;
         Loaded += (_, _) =>
         {
+            _ = GroupSystemIconService.WarmAsync();
+            _ = Dispatcher.InvokeAsync(async () => await GroupEditor.PrepareAsync(), DispatcherPriority.Background);
+            PreviewHint.Visibility = IsPreview ? Visibility.Visible : Visibility.Collapsed;
             // Keep the manager inside the active work area at high DPI and on smaller displays.
             var workArea = SystemParameters.WorkArea;
             MaxWidth = Math.Max(MinWidth, workArea.Width * 0.96);
@@ -98,6 +114,7 @@ public partial class MainWindow : Window
 
     public void RefreshData()
     {
+        GroupUndoButton.ToolTip = LocalizationService.Current.Get(_config.LastOrganization?.Entries.Count > 0 ? "Organize_Undo" : "Organize_NoUndo");
         GroupList.Items.Refresh();
         SetCollapseStyleRadio();
         SetThemeRadio();
@@ -137,7 +154,12 @@ public partial class MainWindow : Window
         QuickPage.Visibility = page == "Quick" ? Visibility.Visible : Visibility.Collapsed;
         AboutPage.Visibility = page == "About" ? Visibility.Visible : Visibility.Collapsed;
         foreach (var button in new[] { HomeNav, GroupsNav, SnapshotsNav, AppearanceNav, QuickNav, AboutNav })
-            button.SetResourceReference(Control.BackgroundProperty, Equals(button.Tag, page) ? "SelectedBrush" : "SidebarBrush");
+        {
+            var selected = Equals(button.Tag, page);
+            button.SetResourceReference(Control.ForegroundProperty, selected ? "PrimaryBrush" : "TextBrush");
+            button.FontWeight = selected ? FontWeights.SemiBold : FontWeights.Normal;
+            Controls.SoftBorder.SetSelected(button, selected);
+        }
         if (page == "Snapshots") _ = ReloadSnapshotsAsync();
         if (page == "Appearance")
         {
@@ -262,14 +284,24 @@ public partial class MainWindow : Window
     {
         var sample = GetPreviewGroup();
         var name = sample?.Name ?? LocalizationService.Current.Get("Appearance_Development");
-        var glyph = sample?.Glyph ?? "\uE943";
+        var glyph = string.IsNullOrWhiteSpace(sample?.Glyph) ? "\uE943" : sample.Glyph;
         Brush accent = Brushes.DodgerBlue;
         try { accent = (Brush)new BrushConverter().ConvertFromString(sample?.Accent ?? "#2675F5")!; }
         catch { }
         var customIcon = string.IsNullOrWhiteSpace(sample?.IconPath) ? null : GroupIconStorageService.LoadPreview(sample.IconPath);
-        foreach (var icon in new[] { PreviewExpandedIcon, PreviewCollapsedIcon, PreviewOnlyIcon }) icon.Background = accent;
-        foreach (var text in new[] { PreviewExpandedGlyph, PreviewCollapsedGlyph, PreviewOnlyGlyph }) text.Text = glyph;
-        foreach (var image in new[] { PreviewExpandedCustomIcon, PreviewCollapsedCustomIcon, PreviewOnlyCustomIcon }) image.Source = customIcon;
+        var displayIcon = customIcon ?? GroupSystemIconService.GetIcon(glyph);
+        foreach (var icon in new[] { PreviewExpandedIcon, PreviewCollapsedIcon, PreviewOnlyIcon })
+            icon.SetResourceReference(Border.BackgroundProperty, "CardBrush");
+        foreach (var text in new[] { PreviewExpandedGlyph, PreviewCollapsedGlyph, PreviewOnlyGlyph })
+        {
+            text.Text = glyph;
+            text.Foreground = accent;
+            text.Visibility = displayIcon is null ? Visibility.Visible : Visibility.Collapsed;
+        }
+        foreach (var image in new[] { PreviewExpandedCustomIcon, PreviewCollapsedCustomIcon, PreviewOnlyCustomIcon }) image.Source = displayIcon;
+        var styleSample = sample ?? new CategoryGroup { Name = name, Glyph = glyph, Accent = "#5D4AD9" };
+        foreach (var thumbnail in new[] { CapsuleStyleIcon, VerticalStyleIcon, IconOnlyStyleIcon })
+            thumbnail.Content = styleSample;
         PreviewExpandedName.Text = name;
         PreviewCollapsedName.Text = name;
         PreviewCollapsedCount.Text = sample?.ItemCount.ToString(LocalizationService.Current.FormatCulture) ?? "0";
@@ -330,9 +362,7 @@ public partial class MainWindow : Window
         var dark = Application.Current.Resources["IsDarkTheme"] is true;
         var collapsedPreview = _previewMode != 0;
         var scale = 1d;
-        var fill = dark
-            ? collapsedPreview ? Color.FromRgb(43, 49, 61) : Color.FromRgb(38, 43, 53)
-            : collapsedPreview ? Color.FromRgb(246, 250, 255) : Color.FromRgb(245, 249, 255);
+        var fill = dark ? Color.FromRgb(41, 46, 57) : Color.FromRgb(224, 229, 236);
         var radius = Math.Max(0, _config.CornerRadius);
         if (_previewMode == 0)
         {
@@ -347,14 +377,12 @@ public partial class MainWindow : Window
         PreviewPanel.CornerRadius = new CornerRadius(radius);
         PreviewSurface.CornerRadius = new CornerRadius(radius);
         var previewColor = Color.FromArgb(alpha, fill.R, fill.G, fill.B);
-        if (PreviewSurface.Background is SolidColorBrush previewBrush && !previewBrush.IsFrozen)
+        if (PreviewSurface.ReadLocalValue(Border.BackgroundProperty) is SolidColorBrush previewBrush && !previewBrush.IsFrozen)
             previewBrush.Color = previewColor;
         else
             PreviewSurface.Background = new SolidColorBrush(previewColor);
         PreviewSurface.Opacity = 1;
-        PreviewPanel.BorderBrush = new SolidColorBrush(_previewMode == 0
-            ? Color.FromArgb(0xAF, 255, 255, 255)
-            : Color.FromArgb(0xBF, 255, 255, 255));
+        PreviewPanel.BorderBrush = Brushes.Transparent;
         if (radius <= 0)
             PreviewPanel.Clip = null;
         else
@@ -373,15 +401,68 @@ public partial class MainWindow : Window
         StartupChanged(sender, e);
     }
 
-    private async void NewGroup_Click(object sender, RoutedEventArgs e)
+    private void NewGroup_Click(object sender, RoutedEventArgs e) => OpenGroupPanel();
+
+    internal void OpenGroupPanel()
     {
-        var dialog = new CreateGroupWindow { Owner = this };
-        SetModalOverlay(true);
-        bool accepted;
-        try { accepted = dialog.ShowDialog() == true; }
-        finally { SetModalOverlay(false); }
-        if (!accepted || dialog.Result is null) return;
-        var result = dialog.Result;
+        if (_openingGroup) return;
+        _openingGroup = true;
+        var version = ++_groupPanelVersion;
+        GroupEditor.Reset();
+        GroupPanelSurface.MaxHeight = Math.Max(320, RootGrid.ActualHeight - 40);
+        WorkspaceContent.IsHitTestVisible = false;
+        SidebarShell.IsHitTestVisible = false;
+        WorkspaceContent.CacheMode = new BitmapCache();
+        SidebarShell.CacheMode = new BitmapCache();
+        CreateGroupLayer.Visibility = Visibility.Visible;
+        CreateGroupLayer.IsHitTestVisible = true;
+        var duration = SystemParameters.ClientAreaAnimation && !SystemParameters.HighContrast ? 300 : 0;
+        var ease = new SineEase { EasingMode = EasingMode.EaseInOut };
+        // Cache only the compact form during motion, so its text, icons and soft
+        // shadows are not rasterized again for every scale/opacity frame.
+        CreateGroupLayer.BeginAnimation(OpacityProperty, null);
+        CreateGroupLayer.Opacity = 1;
+        GroupPanelSurface.CacheMode = new BitmapCache();
+        var reveal = new DoubleAnimation(.82, 1, TimeSpan.FromMilliseconds(duration)) { EasingFunction = ease };
+        reveal.Completed += (_, _) => { if (_openingGroup && version == _groupPanelVersion) GroupPanelSurface.CacheMode = null; };
+        GroupPanelSurface.BeginAnimation(OpacityProperty, reveal);
+        GroupPanelScale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(.985, 1, TimeSpan.FromMilliseconds(duration)) { EasingFunction = ease });
+        GroupPanelScale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(.985, 1, TimeSpan.FromMilliseconds(duration)) { EasingFunction = ease });
+        GroupEditor.FocusName();
+        _ = GroupEditor.PrepareAsync();
+    }
+
+    internal void CloseGroupPanel()
+    {
+        if (!_openingGroup) return;
+        _openingGroup = false;
+        var version = ++_groupPanelVersion;
+        CreateGroupLayer.IsHitTestVisible = false;
+        WorkspaceContent.IsHitTestVisible = true;
+        SidebarShell.IsHitTestVisible = true;
+        var duration = SystemParameters.ClientAreaAnimation && !SystemParameters.HighContrast ? 300 : 0;
+        GroupPanelSurface.CacheMode = new BitmapCache();
+        var fade = new DoubleAnimation(0, TimeSpan.FromMilliseconds(duration)) { EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut } };
+        fade.Completed += (_, _) =>
+        {
+            if (!_openingGroup && version == _groupPanelVersion)
+            {
+                CreateGroupLayer.Visibility = Visibility.Hidden;
+                GroupPanelSurface.CacheMode = null;
+                WorkspaceContent.CacheMode = null;
+                SidebarShell.CacheMode = null;
+            }
+        };
+        GroupPanelSurface.BeginAnimation(OpacityProperty, fade);
+        NewGroupButton.Focus();
+    }
+
+    private void GroupBackdrop_Click(object sender, MouseButtonEventArgs e) { e.Handled = true; CloseGroupPanel(); }
+
+    private async void GroupEditor_Completed(CreateGroupWindow.CreationResult? result)
+    {
+        CloseGroupPanel();
+        if (result is null) return;
         string iconPath;
         try { iconPath = result.UploadPath is null ? string.Empty : _groupIconStorage.Store(result.UploadPath); }
         catch (Exception ex)
@@ -396,20 +477,66 @@ public partial class MainWindow : Window
         group.IsEnabled = result.ShowOnDesktop;
         _config.Groups.Add(group);
         _refreshWindows();
-        await _save();
-        GroupList.Items.Refresh();
+        try
+        {
+            await _save();
+            GroupList.Items.Refresh();
+            ShowNotice(LocalizationService.Current.Get("Action_GroupCreated"));
+        }
+        catch (Exception ex) { ShowNotice(LocalizationService.Current.Format("Action_Failed", ex.Message)); }
     }
 
-    internal void SetModalOverlay(bool visible) => ModalOverlay.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+    internal void SetModalOverlay(bool visible)
+    {
+        var duration = SystemParameters.ClientAreaAnimation && !SystemParameters.HighContrast ? 300 : 0;
+        if (visible)
+        {
+            var from = ModalOverlay.Visibility == Visibility.Visible ? ModalOverlay.Opacity : 0;
+            ModalOverlay.Visibility = Visibility.Visible;
+            ModalOverlay.IsHitTestVisible = true;
+            ModalOverlay.BeginAnimation(OpacityProperty, new DoubleAnimation(from, 1, TimeSpan.FromMilliseconds(duration))
+                { EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut } });
+        }
+        else
+        {
+            // Release input immediately; the last frame can fade without swallowing clicks.
+            ModalOverlay.IsHitTestVisible = false;
+            var fade = new DoubleAnimation(0, TimeSpan.FromMilliseconds(duration))
+                { EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut } };
+            fade.Completed += (_, _) => { if (!ModalOverlay.IsHitTestVisible) ModalOverlay.Visibility = Visibility.Collapsed; };
+            ModalOverlay.BeginAnimation(OpacityProperty, fade);
+        }
+    }
+
+    internal void ShowNotice(string message)
+    {
+        OperationStatus.Text = message;
+        OperationNotice.Visibility = Visibility.Visible;
+        _noticeTimer.Stop();
+        _noticeTimer.Start();
+    }
+
+    internal void SetOperationBusy(bool busy, string? message = null)
+    {
+        foreach (var button in new[] { NewGroupButton, CreateSnapshotButton, GroupOrganizeButton, GroupUndoButton, HomeOrganizeButton })
+            button.IsEnabled = !busy;
+        if (message is not null) ShowNotice(message);
+        if (busy) _noticeTimer.Stop();
+    }
+
+    private void DismissNotice_Click(object sender, RoutedEventArgs e)
+    { _noticeTimer.Stop(); OperationNotice.Visibility = Visibility.Collapsed; }
 
     private async void Organize_Click(object sender, RoutedEventArgs e)
     {
-        if (_organize is not null) await _organize(false);
+        if (_organize is null) { ShowNotice(LocalizationService.Current.Get("Action_Unavailable")); return; }
+        await _organize(false);
     }
 
     private async void UndoOrganization_Click(object sender, RoutedEventArgs e)
     {
-        if (_organize is not null) await _organize(true);
+        if (_organize is null) { ShowNotice(LocalizationService.Current.Get("Action_Unavailable")); return; }
+        await _organize(true);
     }
 
     private async void RenameGroup_Click(object sender, RoutedEventArgs e)
@@ -481,17 +608,37 @@ public partial class MainWindow : Window
 
     private async Task ReloadSnapshotsAsync()
     {
-        if (_snapshotService is not null) SnapshotList.ItemsSource = await _snapshotService.ListAsync();
+        try
+        {
+            IReadOnlyList<LayoutSnapshot> snapshots = _snapshotService is null ? [] : await _snapshotService.ListAsync();
+            SnapshotList.ItemsSource = snapshots;
+            SnapshotEmptyState.Visibility = snapshots.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        }
+        catch (Exception ex) { ShowNotice(LocalizationService.Current.Format("Action_Failed", ex.Message)); }
     }
 
     private async void CreateSnapshot_Click(object sender, RoutedEventArgs e)
     {
-        if (_createSnapshot is null) return;
+        if (_createSnapshot is null) { ShowNotice(LocalizationService.Current.Get("Action_Unavailable")); return; }
+        if (_snapshotBusy) return;
+        _snapshotBusy = true;
+        try
+        {
         var dialog = new TextPromptWindow(LocalizationService.Current.Get("Prompt_CreateSnapshot"), LocalizationService.Current.Get("Prompt_SnapshotName"),
             LocalizationService.Current.Format("Prompt_DefaultSnapshot", DateTime.Now.ToString("g", LocalizationService.Current.FormatCulture))) { Owner = this };
-        if (dialog.ShowDialog() != true) return;
+        SetModalOverlay(true);
+        bool accepted;
+        try { accepted = dialog.ShowDialog() == true; }
+        finally { SetModalOverlay(false); }
+        if (!accepted) return;
+        SetOperationBusy(true, LocalizationService.Current.Get("Action_SavingSnapshot"));
+        await Dispatcher.Yield(DispatcherPriority.Render);
         await _createSnapshot(dialog.Result, false);
         await ReloadSnapshotsAsync();
+        ShowNotice(LocalizationService.Current.Get("Action_SnapshotCreated"));
+        }
+        catch (Exception ex) { ShowNotice(LocalizationService.Current.Format("Action_Failed", ex.Message)); }
+        finally { _snapshotBusy = false; SetOperationBusy(false); }
     }
 
     private void PreviewSnapshot_Click(object sender, RoutedEventArgs e)
@@ -503,8 +650,16 @@ public partial class MainWindow : Window
     {
         if (_restoreSnapshot is null || sender is not FrameworkElement { DataContext: LayoutSnapshot snapshot }) return;
         if (MessageBox.Show(this, LocalizationService.Current.Format("Prompt_RestoreSnapshot", snapshot.Name), LocalizationService.Current.Get("Prompt_RestoreSnapshotTitle"), MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
-        await _restoreSnapshot(snapshot);
-        GroupList.Items.Refresh();
+        try
+        {
+            SetOperationBusy(true, LocalizationService.Current.Get("Action_RestoringSnapshot"));
+            await _restoreSnapshot(snapshot);
+            RefreshData();
+            await ReloadSnapshotsAsync();
+            ShowNotice(LocalizationService.Current.Get("Action_SnapshotRestored"));
+        }
+        catch (Exception ex) { ShowNotice(LocalizationService.Current.Format("Action_Failed", ex.Message)); }
+        finally { SetOperationBusy(false); }
     }
 
     private async void DeleteSnapshot_Click(object sender, RoutedEventArgs e)
@@ -581,7 +736,7 @@ public partial class MainWindow : Window
 
     private async void StartupChanged(object sender, RoutedEventArgs e)
     {
-        if (!IsLoaded) return;
+        if (!IsLoaded || IsPreview) return;
         try { StartupService.SetEnabled(StartupCheck.IsChecked == true); }
         catch (Exception ex) { MessageBox.Show(this, ex.Message, LocalizationService.Current.Get("Message_StartupFailed"), MessageBoxButton.OK, MessageBoxImage.Warning); }
         await _save();

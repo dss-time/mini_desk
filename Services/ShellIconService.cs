@@ -11,13 +11,24 @@ public static class ShellIconService
     private static readonly Dictionary<string, ImageSource?> Cache = new(StringComparer.OrdinalIgnoreCase);
     private static readonly object Sync = new();
 
+    public static ImageSource? GetCachedIcon(string path)
+    {
+        lock (Sync) return Cache.GetValueOrDefault(path);
+    }
+
     public static ImageSource? GetIcon(string path)
     {
         lock (Sync)
         {
-            if (Cache.TryGetValue(path, out var cached)) return cached;
-            var icon = Load(path);
-            Cache[path] = icon;
+            if (Cache.TryGetValue(path, out var cached) && cached is not null) return cached;
+        }
+        // Shell extension/file-association lookups must not hold the cache lock
+        // while another thread is preloading a different icon.
+        var icon = Load(path);
+        lock (Sync)
+        {
+            if (Cache.TryGetValue(path, out var cached) && cached is not null) return cached;
+            if (icon is not null) Cache[path] = icon;
             return icon;
         }
     }

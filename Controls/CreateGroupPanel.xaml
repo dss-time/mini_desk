@@ -1,0 +1,80 @@
+<UserControl x:Class="MiniDesk.Controls.CreateGroupPanel"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ui="clr-namespace:MiniDesk.Controls"
+    Foreground="{DynamicResource TextBrush}" KeyboardNavigation.TabNavigation="Cycle" PreviewKeyDown="Panel_KeyDown">
+    <UserControl.Resources>
+        <Style x:Key="PanelIcon" TargetType="ListBoxItem">
+            <Setter Property="Width" Value="76" /><Setter Property="Height" Value="68" /><Setter Property="Margin" Value="2" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" /><Setter Property="VerticalContentAlignment" Value="Stretch" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ListBoxItem">
+                <Border x:Name="Tile" Background="{DynamicResource CardBrush}" BorderBrush="Transparent" BorderThickness="1" CornerRadius="12" Padding="5" Cursor="Hand">
+                    <Grid><ContentPresenter /><TextBlock x:Name="Mark" Text="&#xE73E;" FontFamily="Segoe Fluent Icons" Foreground="{DynamicResource PrimaryBrush}" FontSize="9" HorizontalAlignment="Right" Visibility="Collapsed" /></Grid>
+                </Border>
+                <ControlTemplate.Triggers>
+                    <Trigger Property="IsSelected" Value="True"><Setter TargetName="Tile" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" /><Setter TargetName="Tile" Property="Background" Value="{DynamicResource SelectedBrush}" /><Setter TargetName="Mark" Property="Visibility" Value="Visible" /></Trigger>
+                    <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Tile" Property="Background" Value="{DynamicResource SelectedBrush}" /></Trigger>
+                    <Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="Tile" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" /></Trigger>
+                </ControlTemplate.Triggers>
+            </ControlTemplate></Setter.Value></Setter>
+        </Style>
+    </UserControl.Resources>
+    <Grid Margin="24">
+        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+        <Grid Margin="0,0,0,20">
+            <StackPanel><TextBlock Text="{DynamicResource Create_Title}" FontSize="23" FontWeight="SemiBold" /><TextBlock Text="{DynamicResource Create_Subtitle}" Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="0,5,40,0" /></StackPanel>
+            <Button Style="{StaticResource IconButton}" Content="×" HorizontalAlignment="Right" VerticalAlignment="Top" Click="Cancel_Click" AutomationProperties.Name="{DynamicResource Common_Close}" />
+        </Grid>
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,4,0">
+            <StackPanel>
+                <Label Content="{DynamicResource Groups_Name}" Target="{Binding ElementName=NameInput}" Foreground="{DynamicResource TextBrush}" FontWeight="SemiBold" Padding="0,0,0,8" />
+                <ui:SoftBorder Background="{DynamicResource CardBrush}" CornerRadius="12" Depth="-3" Height="44">
+                    <Grid>
+                        <!-- Use a native text view; no shadow rendering or bitmap cache sits in its content host. -->
+                        <TextBox x:Name="NameInput" Style="{x:Null}" FontFamily="Segoe UI Variable Text, Microsoft YaHei UI" FontSize="14" Background="Transparent" Foreground="{DynamicResource TextBrush}" CaretBrush="{DynamicResource PrimaryBrush}" SelectionBrush="{DynamicResource SelectedBrush}" SelectionTextBrush="{DynamicResource TextBrush}" BorderThickness="0" Padding="12,0" VerticalContentAlignment="Center" TextChanged="Name_Changed" AutomationProperties.Name="{DynamicResource Groups_Name}" AutomationProperties.AutomationId="InlineGroupName">
+                        </TextBox>
+                        <TextBlock x:Name="NameHint" Text="{DynamicResource Create_NamePlaceholder}" Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="12,0" VerticalAlignment="Center" IsHitTestVisible="False" />
+                    </Grid>
+                </ui:SoftBorder>
+                <Grid Margin="0,20,0,10">
+                    <TextBlock Text="{DynamicResource Create_SelectIcon}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button x:Name="SystemIconsButton" Content="{DynamicResource Create_SystemIcons}" Padding="10,6" MinHeight="30" Margin="0,0,10,0" Click="System_Click" />
+                        <Button x:Name="UploadIconButton" Content="{DynamicResource Create_UploadIcon}" Padding="10,6" MinHeight="30" Click="Upload_Click" />
+                    </StackPanel>
+                </Grid>
+                <Grid Height="220">
+                    <ListBox x:Name="IconList" Background="Transparent" Foreground="{DynamicResource TextBrush}" BorderThickness="0" ItemContainerStyle="{StaticResource PanelIcon}" SelectionChanged="Icon_Changed" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto" AutomationProperties.Name="{DynamicResource Create_SystemIcons}">
+                        <ListBox.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ListBox.ItemsPanel>
+                        <ListBox.ItemTemplate><DataTemplate>
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <Grid Width="30" Height="30"><TextBlock Text="{Binding Glyph}" FontFamily="Segoe Fluent Icons" FontSize="22" Foreground="{Binding Accent, Converter={StaticResource HexBrush}}" HorizontalAlignment="Center" VerticalAlignment="Center"><TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding Image}" Value="{x:Null}"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></TextBlock.Style></TextBlock><Image Source="{Binding Image}" Stretch="Uniform" /></Grid>
+                                <TextBlock Text="{Binding Name}" Foreground="{DynamicResource TextBrush}" FontSize="10" Margin="0,5,0,0" MaxWidth="64" TextTrimming="CharacterEllipsis" ToolTip="{Binding Name}" HorizontalAlignment="Center" />
+                            </StackPanel>
+                        </DataTemplate></ListBox.ItemTemplate>
+                    </ListBox>
+                    <TextBlock x:Name="PreparingHint" Text="{DynamicResource Panel_LoadingIcons}" Foreground="{DynamicResource MutedBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <Border x:Name="UploadArea" Background="{DynamicResource CardBrush}" CornerRadius="16" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Visibility="Collapsed" AllowDrop="True" Drop="Upload_Drop" DragOver="Upload_DragOver">
+                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="370">
+                            <Image x:Name="UploadedImage" Width="48" Height="48" Margin="0,0,0,12" />
+                            <TextBlock x:Name="UploadTitle" Text="{DynamicResource Create_UploadDrop}" Foreground="{DynamicResource MutedBrush}" TextAlignment="Center" TextWrapping="Wrap" />
+                            <Button Content="{DynamicResource Create_ChooseFile}" HorizontalAlignment="Center" Margin="0,14,0,0" Click="ChooseFile_Click" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+                <TextBlock x:Name="ValidationMessage" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap" Margin="0,8,0,0" Visibility="Collapsed" AutomationProperties.LiveSetting="Polite" />
+                <Grid Margin="0,18,0,0">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="140" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                    <TextBlock Text="{DynamicResource Create_DefaultState}" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                    <ComboBox x:Name="DisplayState" Grid.Column="1" SelectedIndex="0" MinHeight="34" AutomationProperties.Name="{DynamicResource Create_DefaultState}"><ComboBoxItem Content="{DynamicResource State_Expanded}" Tag="Expanded" /><ComboBoxItem Content="{DynamicResource State_Collapsed}" Tag="Collapsed" /><ComboBoxItem Content="{DynamicResource State_IconOnly}" Tag="IconOnly" /></ComboBox>
+                    <CheckBox x:Name="ShowOnDesktop" Grid.Column="2" Content="{DynamicResource Create_ShowDesktop}" IsChecked="True" FontSize="11" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="12,0,0,0" />
+                </Grid>
+            </StackPanel>
+        </ScrollViewer>
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,22,0,0">
+            <Button x:Name="CancelAction" Content="{DynamicResource Common_Cancel}" MinWidth="90" MinHeight="42" Margin="0,0,14,0" Click="Cancel_Click" AutomationProperties.AutomationId="CancelInlineGroup" />
+            <Button x:Name="CreateAction" Content="{DynamicResource Create_Action}" Style="{StaticResource PrimaryButton}" MinWidth="120" MinHeight="42" IsEnabled="False" Click="Create_Click" AutomationProperties.AutomationId="CreateInlineGroup" />
+        </StackPanel>
+    </Grid>
+</UserControl>

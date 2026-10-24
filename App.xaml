@@ -7,24 +7,26 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="/Styles/DesignTokens.xaml" />
-                <ResourceDictionary Source="/Styles/FluentControls.xaml" />
+                <ResourceDictionary Source="/Styles/SoftControls.xaml" />
                 <ResourceDictionary Source="/Styles/ContextMenus.xaml" />
             </ResourceDictionary.MergedDictionaries>
         <conv:HexBrushConverter x:Key="HexBrush" />
         <conv:ShellIconConverter x:Key="ShellIcon" />
         <conv:GroupIconConverter x:Key="GroupIcon" />
+        <conv:SystemGroupIconConverter x:Key="SystemGroupIcon" />
+        <conv:GroupDisplayIconConverter x:Key="GroupDisplayIcon" />
+        <DataTemplate x:Key="SystemGroupIconContent">
+            <Grid>
+                <TextBlock Text="{Binding Glyph}" FontFamily="Segoe Fluent Icons" Foreground="{Binding Accent, Converter={StaticResource HexBrush}}" FontSize="17" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding Source, ElementName=NativeGroupImage}" Value="{x:Null}"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></TextBlock.Style>
+                </TextBlock>
+                <Image x:Name="NativeGroupImage" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality">
+                    <Image.Source><MultiBinding Converter="{StaticResource GroupDisplayIcon}"><Binding Path="IconPath" /><Binding Path="Glyph" /></MultiBinding></Image.Source>
+                </Image>
+            </Grid>
+        </DataTemplate>
         <conv:CornerRadiusConverter x:Key="CornerRadius" />
-        <Style x:Key="TextBox" TargetType="TextBox">
-            <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI" />
-            <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-            <Setter Property="Background" Value="{DynamicResource CardBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Padding" Value="10,7" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-            <Setter Property="CaretBrush" Value="{DynamicResource TextBrush}" />
-        </Style>
-        <Style TargetType="TextBox" BasedOn="{StaticResource TextBox}" />
+
         </ResourceDictionary>
     </Application.Resources>
 </Application>

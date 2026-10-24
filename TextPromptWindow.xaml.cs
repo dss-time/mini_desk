@@ -9,6 +9,7 @@ public partial class TextPromptWindow : Window
     public TextPromptWindow(string title, string label, string value)
     {
         InitializeComponent();
+        Services.DialogMotion.Attach(this);
         Heading.Text = title;
         Label.Text = label;
         Input.Text = value;

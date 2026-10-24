@@ -282,16 +282,18 @@ public partial class DesktopGroupWindow : Window
         var dark = (System.Windows.Application.Current as App)?.Config.ThemeMode == AppThemeMode.Dark ||
                    (System.Windows.Application.Current as App)?.Config.ThemeMode == AppThemeMode.System &&
                    System.Windows.Application.Current.Resources["AppBackgroundBrush"] is SolidColorBrush appBrush && appBrush.Color.R < 80;
-        SetSurface(ExpandedCard, dark ? Color.FromRgb(38, 43, 53) : Color.FromRgb(245, 249, 255), alpha);
+        SetSurface(ExpandedCard, dark ? Color.FromRgb(41, 46, 57) : Color.FromRgb(224, 229, 236), alpha);
         ExpandedCard.CornerRadius = new CornerRadius(_config.CornerRadius);
-        SetSurface(CollapsedCard, dark ? Color.FromRgb(43, 49, 61) : Color.FromRgb(246, 250, 255), alpha);
+        SetSurface(CollapsedCard, dark ? Color.FromRgb(41, 46, 57) : Color.FromRgb(224, 229, 236), alpha);
         CollapsedCard.CornerRadius = new CornerRadius(_config.CornerRadius);
     }
 
     private static void SetSurface(Border surface, Color color, byte alpha)
     {
         color.A = alpha;
-        if (surface.Background is SolidColorBrush brush && !brush.IsFrozen) brush.Color = color;
+        // A DynamicResource brush belongs to the whole theme. Give this panel its
+        // own fill before applying opacity so other soft surfaces remain opaque.
+        if (surface.ReadLocalValue(Border.BackgroundProperty) is SolidColorBrush brush && !brush.IsFrozen) brush.Color = color;
         else surface.Background = new SolidColorBrush(color);
     }
 

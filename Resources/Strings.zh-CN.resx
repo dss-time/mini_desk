@@ -255,4 +255,18 @@
   <data name="Context_ActionFailed" xml:space="preserve"><value>操作未完成，原有项目不会被直接删除。\n{0}</value></data>
   <data name="Context_GroupFull" xml:space="preserve"><value>这个分组没有空余位置，请先增大分组尺寸或选择其他分组。</value></data>
   <data name="Context_GroupDisabled" xml:space="preserve"><value>请先在分组管理中启用这个分组，再移入项目。</value></data>
+  <data name="Action_Failed" xml:space="preserve"><value>操作未完成：{0}</value></data>
+  <data name="Action_GroupCreated" xml:space="preserve"><value>分组已创建。</value></data>
+  <data name="Action_OpeningGroup" xml:space="preserve"><value>正在打开新建分组…</value></data>
+  <data name="Action_RestoringSnapshot" xml:space="preserve"><value>正在恢复布局…</value></data>
+  <data name="Action_SavingSnapshot" xml:space="preserve"><value>正在保存布局快照…</value></data>
+  <data name="Action_Scanning" xml:space="preserve"><value>正在扫描待整理的项目…</value></data>
+  <data name="Action_SnapshotCreated" xml:space="preserve"><value>快照已创建，可随时预览或恢复此布局。</value></data>
+  <data name="Action_SnapshotRestored" xml:space="preserve"><value>布局已恢复。</value></data>
+  <data name="Action_Unavailable" xml:space="preserve"><value>此操作暂不可用，请重新打开应用后重试。</value></data>
+  <data name="Action_Undoing" xml:space="preserve"><value>正在撤销上次整理…</value></data>
+  <data name="Preview_DesktopHint" xml:space="preserve"><value>使用独立示例桌面，可体验整理和撤销，不影响真实桌面。</value></data>
+  <data name="Snapshots_Empty" xml:space="preserve"><value>还没有布局快照</value></data>
+  <data name="Snapshots_EmptyHint" xml:space="preserve"><value>保存当前分组和布局，之后可以一键恢复。</value></data>
+  <data name="Panel_LoadingIcons" xml:space="preserve"><value>正在准备图标…</value></data>
 </root>

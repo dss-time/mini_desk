@@ -1,10 +1,10 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:ui="clr-namespace:MiniDesk.Controls">
     <Style TargetType="ContextMenu">
         <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
-        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderThickness" Value="0" />
         <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI" />
         <Setter Property="FontSize" Value="13" />
         <Setter Property="Language" Value="{DynamicResource CurrentLanguage}" />
@@ -12,18 +12,18 @@
         <Setter Property="HasDropShadow" Value="False" />
         <Setter Property="Template"><Setter.Value>
             <ControlTemplate TargetType="ContextMenu">
-                <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
-                        BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="12" Padding="4">
+                <ui:SoftBorder Depth="8" Margin="14" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="0" CornerRadius="12" Padding="4">
                     <ScrollViewer CanContentScroll="True" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" MaxHeight="480">
                         <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Cycle" />
                     </ScrollViewer>
-                </Border>
+                </ui:SoftBorder>
             </ControlTemplate>
         </Setter.Value></Setter>
     </Style>
     <Style x:Key="ContextMenuSeparator" TargetType="Separator">
         <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Separator">
-            <Border Height="1" Background="{DynamicResource BorderBrush}" Margin="12,4" />
+            <ui:SoftBorder Height="1" Background="{DynamicResource BorderBrush}" Margin="12,4" />
         </ControlTemplate></Setter.Value></Setter>
     </Style>
     <DataTemplate x:Key="ContextMenuHeader"><TextBlock Text="{Binding}" TextWrapping="Wrap" MaxWidth="360" /></DataTemplate>
@@ -36,7 +36,7 @@
         <Setter Property="Template"><Setter.Value>
             <ControlTemplate TargetType="MenuItem">
                 <Grid>
-                    <Border x:Name="Chrome" Background="{TemplateBinding Background}" CornerRadius="8" Padding="{TemplateBinding Padding}">
+                    <ui:SoftBorder x:Name="Chrome" Background="{TemplateBinding Background}" CornerRadius="12" Padding="{TemplateBinding Padding}">
                         <Grid>
                             <Grid.ColumnDefinitions><ColumnDefinition Width="20"/><ColumnDefinition Width="*"/><ColumnDefinition Width="16"/></Grid.ColumnDefinitions>
                             <ContentPresenter x:Name="Icon" ContentSource="Icon" VerticalAlignment="Center" />
@@ -44,23 +44,23 @@
                             <ContentPresenter Grid.Column="1" ContentSource="Header" Margin="12,0,16,0" VerticalAlignment="Center" RecognizesAccessKey="True" />
                             <TextBlock x:Name="Arrow" Grid.Column="2" Text="&#xE76C;" FontFamily="Segoe Fluent Icons" FontSize="10" Visibility="Collapsed" VerticalAlignment="Center" />
                         </Grid>
-                    </Border>
+                    </ui:SoftBorder>
                     <Popup x:Name="PART_Popup" Placement="Right" HorizontalOffset="3" VerticalOffset="-4"
                            IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}"
                            AllowsTransparency="True" Focusable="False">
-                        <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="12" Padding="4" MinWidth="220">
+                        <ui:SoftBorder Depth="8" Margin="14" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0" CornerRadius="12" Padding="4" MinWidth="220">
                             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" MaxHeight="480">
                                 <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Cycle" KeyboardNavigation.TabNavigation="Cycle" />
                             </ScrollViewer>
-                        </Border>
+                        </ui:SoftBorder>
                     </Popup>
                 </Grid>
                 <ControlTemplate.Triggers>
                     <Trigger Property="HasItems" Value="True"><Setter TargetName="Arrow" Property="Visibility" Value="Visible" /></Trigger>
                     <Trigger Property="IsChecked" Value="True"><Setter TargetName="Icon" Property="Visibility" Value="Collapsed"/><Setter TargetName="Check" Property="Visibility" Value="Visible"/></Trigger>
-                    <Trigger Property="IsHighlighted" Value="True"><Setter TargetName="Chrome" Property="Background" Value="{DynamicResource ControlBrush}" /></Trigger>
-                    <Trigger Property="IsSubmenuOpen" Value="True"><Setter TargetName="Chrome" Property="Background" Value="{DynamicResource SelectedBrush}" /></Trigger>
-                    <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/><Setter TargetName="Chrome" Property="BorderThickness" Value="1"/></Trigger>
+                    <Trigger Property="IsHighlighted" Value="True"><Setter TargetName="Chrome" Property="Depth" Value="-2" /></Trigger>
+                    <Trigger Property="IsSubmenuOpen" Value="True"><Setter TargetName="Chrome" Property="Depth" Value="-4" /></Trigger>
+                    <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/><Setter TargetName="Chrome" Property="BorderThickness" Value="0"/></Trigger>
                     <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Chrome" Property="Opacity" Value="0.45"/></Trigger>
                 </ControlTemplate.Triggers>
             </ControlTemplate>

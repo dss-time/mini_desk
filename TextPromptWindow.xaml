@@ -1,6 +1,6 @@
 <Window x:Class="MiniDesk.TextPromptWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:ui="clr-namespace:MiniDesk.Controls"
         Width="390" SizeToContent="Height" MinHeight="245" WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
         Background="{DynamicResource AppBackgroundBrush}" Foreground="{DynamicResource TextBrush}" Title="MiniDesk" ShowInTaskbar="False" Language="{DynamicResource CurrentLanguage}">
     <Grid Margin="24">
@@ -14,4 +14,3 @@
         </StackPanel>
     </Grid>
 </Window>
-
