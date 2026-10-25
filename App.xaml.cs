@@ -16,6 +16,7 @@ public partial class App : System.Windows.Application
     private CancellationTokenSource? _saveDebounce;
     private ExplorerMonitorService? _explorerMonitor;
     private AppThemeService? _themeService;
+    private RenderingBudgetService? _renderingBudget;
     private Mutex? _singleInstance;
     private EventWaitHandle? _activationEvent;
     private RegisteredWaitHandle? _activationRegistration;
@@ -73,6 +74,7 @@ public partial class App : System.Windows.Application
             Shutdown();
             return;
         }
+        _renderingBudget = new RenderingBudgetService();
         _activationEvent = new EventWaitHandle(false, EventResetMode.AutoReset, "Local\\MiniDesk.Activate");
         _activationRegistration = ThreadPool.RegisterWaitForSingleObject(_activationEvent, (_, _) =>
             Dispatcher.BeginInvoke(new Action(async () => await ProcessPendingRequestsAsync())), null, Timeout.Infinite, false);
@@ -105,25 +107,9 @@ public partial class App : System.Windows.Application
 
     public void RefreshGroupWindows()
     {
-        var activeIds = Config.Groups.Select(g => g.Id).ToHashSet();
-        foreach (var stale in _groupWindows.Where(kv => !activeIds.Contains(kv.Key)).ToList())
-        {
-            stale.Value.AllowClose = true;
-            stale.Value.Close();
-            _groupWindows.Remove(stale.Key);
-        }
-        foreach (var group in Config.Groups)
-        {
-            if (!_groupWindows.TryGetValue(group.Id, out var window))
-            {
-                window = new DesktopGroupWindow(group, Config, SaveAsync, OpenManager, DeleteGroupAsync,
-                    MoveItemBetweenGroupsAsync, _desktopVisibility.Hide, RestoreDesktopItem, CreateGroupFromPromptAsync);
-                _groupWindows[group.Id] = window;
-                window.Show();
-            }
-            window.Visibility = group.IsEnabled ? Visibility.Visible : Visibility.Hidden;
-            window.RefreshVisualState();
-        }
+        DesktopGroupWindowPool.Update(Config, _groupWindows, group =>
+            new DesktopGroupWindow(group, Config, SaveAsync, OpenManager, DeleteGroupAsync,
+                MoveItemBetweenGroupsAsync, _desktopVisibility.Hide, RestoreDesktopItem, CreateGroupFromPromptAsync));
     }
 
     public void RefreshGroupAppearance()
@@ -511,6 +497,7 @@ public partial class App : System.Windows.Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        _renderingBudget?.Dispose();
         _tray?.Dispose();
         _applicationIcon?.Dispose();
         _activationRegistration?.Unregister(null);

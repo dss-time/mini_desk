@@ -13,6 +13,14 @@ public sealed class GroupIconStorageService
     private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
         { ".png", ".jpg", ".jpeg", ".svg", ".ico" };
     private static readonly Dictionary<string, ImageSource?> PreviewCache = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly Queue<string> PreviewOrder = [];
+    internal const int PreviewPixelLimit = 128;
+    internal const int PreviewCacheLimit = 48;
+    internal static int CachedPreviewCount { get { lock (PreviewSync) return PreviewCache.Count; } }
+    internal static void ClearPreviewCache()
+    {
+        lock (PreviewSync) { PreviewCache.Clear(); PreviewOrder.Clear(); }
+    }
     private static readonly object PreviewSync = new();
     private readonly string _storageDirectory;
 
@@ -54,10 +62,7 @@ public sealed class GroupIconStorageService
             }
             else
             {
-                using var stream = File.OpenRead(path);
-                var decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.PreservePixelFormat,
-                    BitmapCacheOption.OnLoad);
-                if (decoder.Frames.Count == 0 || decoder.Frames[0].PixelWidth == 0 || decoder.Frames[0].PixelHeight == 0)
+                if (LoadBitmap(path) is not BitmapSource { PixelWidth: > 0, PixelHeight: > 0 })
                     throw new InvalidDataException("图片尺寸无效");
             }
         }
@@ -83,9 +88,16 @@ public sealed class GroupIconStorageService
         lock (PreviewSync)
         {
             if (PreviewCache.TryGetValue(path, out var cached)) return cached;
-            var image = LoadBitmap(path) ?? LoadShellThumbnail(path) ?? ShellIconService.GetIcon(path);
-            if (image?.CanFreeze == true) image.Freeze();
+        }
+        var image = LoadBitmap(path) ?? LoadShellThumbnail(path) ?? ShellIconService.GetIcon(path);
+        if (image?.CanFreeze == true) image.Freeze();
+        if (image is null) return null;
+        lock (PreviewSync)
+        {
+            if (PreviewCache.TryGetValue(path, out var cached)) return cached;
+            while (PreviewOrder.Count >= PreviewCacheLimit) PreviewCache.Remove(PreviewOrder.Dequeue());
             PreviewCache[path] = image;
+            PreviewOrder.Enqueue(path);
             return image;
         }
     }
@@ -96,8 +108,20 @@ public sealed class GroupIconStorageService
         try
         {
             using var stream = File.OpenRead(path);
-            var decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
-            return decoder.Frames.FirstOrDefault();
+            var decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.None);
+            var frame = decoder.Frames.FirstOrDefault();
+            if (frame is null) return null;
+            var width = frame.PixelWidth;
+            var height = frame.PixelHeight;
+            stream.Position = 0;
+            var image = new BitmapImage();
+            image.BeginInit();
+            image.CacheOption = BitmapCacheOption.OnLoad;
+            image.StreamSource = stream;
+            if (width >= height && width > PreviewPixelLimit) image.DecodePixelWidth = PreviewPixelLimit;
+            else if (height > PreviewPixelLimit) image.DecodePixelHeight = PreviewPixelLimit;
+            image.EndInit();
+            return image;
         }
         catch { return null; }
     }

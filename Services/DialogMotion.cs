@@ -10,6 +10,7 @@ public static class DialogMotion
 {
     public static void Attach(Window window)
     {
+        RenderingBudgetService.Watch(window);
         if (window.Content is not FrameworkElement surface) return;
         if (window.WindowStyle == WindowStyle.None && !window.AllowsTransparency)
         {

@@ -6,7 +6,7 @@ using System.Windows.Media.Animation;
 namespace MiniDesk.Controls;
 
 /// <summary>A solid soft-plastic surface. Positive depth is raised; negative depth is inset.</summary>
-public class SoftBorder : Border
+public partial class SoftBorder : Border
 {
     public static readonly DependencyProperty SelectedProperty = DependencyProperty.RegisterAttached(
         "Selected", typeof(bool), typeof(SoftBorder), new PropertyMetadata(false));
@@ -18,8 +18,6 @@ public class SoftBorder : Border
         "Blend", typeof(double), typeof(SoftBorder), new FrameworkPropertyMetadata(1d, FrameworkPropertyMetadataOptions.AffectsRender));
     private double _previousDepth;
     private double _targetDepth;
-    private readonly record struct ShadowKey(double Width, double Height, double Radius, double Offset, Color Color, bool Inset);
-    private static readonly Dictionary<ShadowKey, DrawingGroup> Shadows = [];
     public double Depth { get => (double)GetValue(DepthProperty); set => SetValue(DepthProperty, value); }
 
     private static void DepthChanged(DependencyObject sender, DependencyPropertyChangedEventArgs args)
@@ -87,19 +85,8 @@ public class SoftBorder : Border
         }
     }
 
-    private static void DrawShadow(DrawingContext drawing, Rect bounds, double radius, double offset, Color color, bool inset)
-    {
-        var key = new ShadowKey(bounds.Width, bounds.Height, radius, offset, color, inset);
-        if (!Shadows.TryGetValue(key, out var shadow))
-        {
-            shadow = new DrawingGroup();
-            using (var context = shadow.Open()) BuildShadow(context, bounds, radius, offset, color, inset);
-            shadow.Freeze();
-            if (Shadows.Count >= 512) Shadows.Clear();
-            Shadows[key] = shadow;
-        }
-        drawing.DrawDrawing(shadow);
-    }
+    private void DrawShadow(DrawingContext drawing, Rect bounds, double radius, double offset, Color color, bool inset)
+        => DrawRasterShadow(drawing, bounds, radius, offset, color, inset);
 
     private static void BuildShadow(DrawingContext drawing, Rect bounds, double radius, double offset, Color color, bool inset)
     {

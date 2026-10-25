@@ -8,6 +8,7 @@ public partial class SnapshotPreviewWindow : Window
     public SnapshotPreviewWindow(LayoutSnapshot snapshot)
     {
         InitializeComponent();
+        Services.RenderingBudgetService.Watch(this);
         DataContext = snapshot;
     }
 

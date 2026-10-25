@@ -48,6 +48,7 @@ public partial class MainWindow : Window
         Action? refreshAppearance = null, Action? commitCornerRadius = null, Func<bool, Task>? organize = null)
     {
         InitializeComponent();
+        RenderingBudgetService.Watch(this);
         GroupEditor.Completed += GroupEditor_Completed;
         SizeChanged += (_, _) => GroupPanelSurface.MaxHeight = Math.Max(320, RootGrid.ActualHeight - 40);
         _noticeTimer.Tick += (_, _) => { _noticeTimer.Stop(); OperationNotice.Visibility = Visibility.Collapsed; };

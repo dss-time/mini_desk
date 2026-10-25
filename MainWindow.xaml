@@ -99,7 +99,7 @@
                 </StackPanel>
             </Grid>
 
-            <ScrollViewer x:Name="AppearancePage" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <ui:SmoothScrollViewer x:Name="AppearancePage" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <Grid Margin="28,22,28,24">
                     <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
                     <Grid Margin="0,0,0,14"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
@@ -228,7 +228,7 @@
                         <ui:SoftBorder Grid.Row="3" Grid.ColumnSpan="2" Style="{StaticResource SettingCard}" Padding="12" Margin="0,0,0,2"><DockPanel><ui:SoftBorder Width="38" Height="38" Background="{DynamicResource ControlBrush}" CornerRadius="12" Margin="0,0,12,0"><TextBlock Text="&#xE7F4;" FontFamily="Segoe Fluent Icons" Foreground="{DynamicResource PrimaryBrush}" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center" /></ui:SoftBorder><StackPanel VerticalAlignment="Center"><TextBlock Text="{DynamicResource Appearance_RuntimeTitle}" FontWeight="SemiBold" FontSize="12" /><TextBlock Text="{DynamicResource Appearance_RuntimeDesc}" Foreground="{DynamicResource MutedBrush}" FontSize="10" TextWrapping="Wrap" /></StackPanel><StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center"><ui:SoftBorder Background="{DynamicResource ControlBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0" CornerRadius="16" Padding="12,5" Margin="0,0,8,0"><TextBlock Text=".NET 10 LTS" Foreground="{DynamicResource PrimaryBrush}" FontSize="10" /></ui:SoftBorder><ui:SoftBorder Background="{DynamicResource CardBrush}" CornerRadius="16" Padding="12,5" Margin="0,0,8,0"><TextBlock Text="x64" Foreground="{DynamicResource MutedBrush}" FontSize="10" /></ui:SoftBorder><ui:SoftBorder Background="{DynamicResource CardBrush}" CornerRadius="16" Padding="12,5"><TextBlock Text="ARM64" Foreground="{DynamicResource MutedBrush}" FontSize="10" /></ui:SoftBorder></StackPanel></DockPanel></ui:SoftBorder>
                     </Grid>
                 </Grid>
-            </ScrollViewer>
+            </ui:SmoothScrollViewer>
 
             <Grid x:Name="QuickPage" Visibility="Collapsed" Margin="32,25,32,28">
                 <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>

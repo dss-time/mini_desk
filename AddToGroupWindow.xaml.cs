@@ -14,6 +14,7 @@ public partial class AddToGroupWindow : Window
         Func<Task<CategoryGroup?>> createGroup)
     {
         InitializeComponent();
+        RenderingBudgetService.Watch(this);
         _addToGroup = addToGroup;
         _createGroup = createGroup;
         GroupList.ItemsSource = config.Groups;

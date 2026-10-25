@@ -270,6 +270,119 @@ public static class SelfTestRunner
             finally { host.Close(); }
         });
 
+        await Run(results, "外观页滚轮平滑过渡、反向与缓存释放", async () =>
+        {
+            var host = new MainWindow(new WorkspaceConfig(), () => Task.CompletedTask, () => { }, _ => Task.CompletedTask) { IsPreview = true, Height = 680 };
+            host.Show();
+            try
+            {
+                Invoke(host.AppearanceNav); await Idle();
+                var scroll = host.AppearancePage;
+                Assert(scroll.ScrollableHeight > 80, "测试页面没有可滚动内容");
+                var content = (FrameworkElement)scroll.Content;
+                var originalCache = content.CacheMode;
+                void Wheel(int delta) => scroll.RaiseEvent(new MouseWheelEventArgs(Mouse.PrimaryDevice, Environment.TickCount, delta) { RoutedEvent = Mouse.MouseWheelEvent });
+                Wheel(120); await Idle();
+                Assert(!scroll.IsAnimating, "滚动到边界后不应创建动画缓存");
+                Wheel(-120); await Task.Delay(35);
+                if (SystemParameters.ClientAreaAnimation && !SystemParameters.HighContrast)
+                    Assert(scroll.IsAnimating && scroll.DisplayedOffset > 0 && scroll.DisplayedOffset < scroll.VerticalOffset,
+                        "滚轮仍然直接跳到终点，未形成中间帧");
+                Wheel(-120); await Task.Delay(25); Wheel(120);
+                await Task.Delay(260);
+                Assert(!scroll.IsAnimating && ReferenceEquals(content.CacheMode, originalCache) && Math.Abs(scroll.DisplayedOffset-scroll.VerticalOffset)<.01,
+                    "动画完成后未释放临时缓存或还原位置");
+                Wheel(-120); await Task.Delay(20);
+                scroll.ScrollToVerticalOffset(0); await Idle();
+                Assert(!scroll.IsAnimating && Math.Abs(scroll.VerticalOffset)<.01, "程序滚动或滚动条操作未中断过渡");
+                Assert(Controls.SoftBorder.ShadowCacheBytes <= Controls.SoftBorder.ShadowCacheBudget, "阴影缓存超过预算");
+            }
+            finally { host.Close(); }
+        });
+
+        await Run(results, "常驻绘制预算与多窗口关闭回收", async () =>
+        {
+            await GroupSystemIconService.WarmAsync();
+            var icon=GroupSystemIconService.GetCachedIcon("\uE943");
+            var original=RenderOptions.ProcessRenderMode;
+            using (var budget=new RenderingBudgetService())
+            {
+                var first=new Window { Width=160,Height=100,ShowInTaskbar=false };
+                var second=new Window { Width=160,Height=100,ShowInTaskbar=false };
+                RenderingBudgetService.Watch(first);RenderingBudgetService.Watch(second);
+                try
+                {
+                    Assert(RenderOptions.ProcessRenderMode==System.Windows.Interop.RenderMode.SoftwareOnly,"后台绘制没有进入低占用模式");
+                    first.Show();await Idle();
+                    Assert(RenderOptions.ProcessRenderMode==System.Windows.Interop.RenderMode.Default,"打开管理界面未恢复硬件加速");
+                    second.Show();
+                    first.WindowState=WindowState.Minimized;second.WindowState=WindowState.Minimized;await Idle();
+                    Assert(RenderOptions.ProcessRenderMode==System.Windows.Interop.RenderMode.SoftwareOnly,"所有交互窗口最小化后仍保留高开销绘制模式");
+                    second.WindowState=WindowState.Normal;await Idle();
+                    Assert(RenderOptions.ProcessRenderMode==System.Windows.Interop.RenderMode.Default,"恢复窗口后没有恢复硬件加速");
+                    first.Close();await Idle();
+                    Assert(RenderOptions.ProcessRenderMode==System.Windows.Interop.RenderMode.Default,"还有对话框时提前切换了绘制模式");
+                    second.Close();await Idle();
+                    Assert(RenderOptions.ProcessRenderMode==System.Windows.Interop.RenderMode.SoftwareOnly,"关闭最后一个交互窗口后没有回到低占用模式");
+                    Assert(GroupIconStorageService.CachedPreviewCount==0,"管理预览缓存没有释放");
+                    Assert(icon is not null && ReferenceEquals(icon,GroupSystemIconService.GetCachedIcon("\uE943")),"回收文件缓存后内置图标丢失");
+                }
+                finally { first.Close();second.Close(); }
+            }
+            Assert(RenderOptions.ProcessRenderMode==original,"绘制预算释放后未还原原设置");
+        });
+
+        await Run(results, "未启用分组不创建窗口且启停不丢失内容", async () =>
+        {
+            var config=new WorkspaceConfig { AttachToDesktop=false };
+            var enabled=ConfigService.NewGroup("启用组");
+            var disabled=ConfigService.NewGroup("停用组");disabled.IsEnabled=false;
+            config.Groups.Add(enabled);config.Groups.Add(disabled);
+            DesktopItemService.AddPath(disabled,sample);
+            var windows=new Dictionary<Guid,DesktopGroupWindow>();
+            DesktopGroupWindow Create(CategoryGroup group)=>new(group,config,()=>Task.CompletedTask,()=>{},_=>Task.CompletedTask);
+            try
+            {
+                DesktopGroupWindowPool.Update(config,windows,Create);await Idle();
+                Assert(windows.Count==1 && !windows.ContainsKey(disabled.Id),"停用分组仍创建并隐藏了原生窗口");
+                disabled.IsEnabled=true;DesktopGroupWindowPool.Update(config,windows,Create);await Idle();
+                Assert(windows.Count==2 && windows[disabled.Id].IsVisible,"启用分组后未显示窗口");
+                disabled.IsEnabled=false;DesktopGroupWindowPool.Update(config,windows,Create);await Idle();
+                Assert(windows.Count==1 && disabled.Items.Count==1 && File.Exists(sample),"停用没有释放窗口或改变了用户文件");
+            }
+            finally { foreach(var window in windows.Values){window.AllowClose=true;window.Close();} }
+        });
+
+        await Run(results, "关闭分组后解除模型事件引用", async () =>
+        {
+            var config=new WorkspaceConfig { AttachToDesktop=false };
+            var group=ConfigService.NewGroup("仍保留的模型");config.Groups.Add(group);
+            var weak=await CloseGroupForCollectionCheck(group,config);
+            await Task.Delay(80);GC.Collect();GC.WaitForPendingFinalizers();GC.Collect();
+            Assert(!weak.IsAlive,"分组模型的集合事件仍然持有已关闭窗口");
+            GC.KeepAlive(config);
+        });
+
+        await Run(results, "大图标缩略解码与预览缓存上限", () =>
+        {
+            var visual = new DrawingVisual();
+            using (var drawing = visual.RenderOpen()) drawing.DrawRectangle(Brushes.CornflowerBlue, null, new Rect(0,0,2048,1024));
+            var bitmap = new RenderTargetBitmap(2048,1024,96,96,PixelFormats.Pbgra32); bitmap.Render(visual);
+            var file = Path.Combine(tempRoot,"large-icon.png");
+            var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap));
+            using (var stream=File.Create(file)) encoder.Save(stream);
+            Assert(GroupIconStorageService.TryValidate(file,out _), "有效大图被错误拒绝");
+            var preview = GroupIconStorageService.LoadPreview(file) as BitmapSource;
+            Assert(preview is { PixelWidth: 128, PixelHeight: 64 } && preview.IsFrozen, "图标仍按完整分辨率保存在预览缓存中");
+            for (var i=0;i<GroupIconStorageService.PreviewCacheLimit+3;i++)
+            {
+                var copy=Path.Combine(tempRoot,$"cache-icon-{i}.png"); File.Copy(file,copy);
+                Assert(GroupIconStorageService.LoadPreview(copy) is not null,"缓存轮换导致有效图标不可用");
+            }
+            Assert(GroupIconStorageService.CachedPreviewCount <= GroupIconStorageService.PreviewCacheLimit, "图标缓存无上限增长");
+            return Task.CompletedTask;
+        });
+
         await Run(results, "预览快照创建、整理、撤销和恢复使用真实服务", async () =>
         {
             var workspace = new PreviewWorkspaceService(Path.Combine(tempRoot, "FunctionalPreview"));
@@ -414,6 +527,7 @@ public static class SelfTestRunner
 
         await Run(results, "桌面分类窗口点击、收起、展开、缩放和菜单", async () =>
         {
+            using var renderingBudget = new RenderingBudgetService();
             var config = new WorkspaceConfig { AttachToDesktop = true, PanelOpacity = 0, CornerRadius = 28 };
             var group = ConfigService.NewGroup("桌面交互", left: 40, top: 40, width: 320, height: 210);
             config.Groups.Add(group);
@@ -1065,6 +1179,16 @@ public static class SelfTestRunner
             // resume the owner test and close the dialog ahead of an async UIA click.
             prompt.ConfirmButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         }), DispatcherPriority.ApplicationIdle);
+    }
+
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static async Task<WeakReference> CloseGroupForCollectionCheck(CategoryGroup group, WorkspaceConfig config)
+    {
+        var window=new DesktopGroupWindow(group,config,()=>Task.CompletedTask,()=>{},_=>Task.CompletedTask);
+        window.Show();await Idle();
+        var weak=new WeakReference(window);
+        window.AllowClose=true;window.Close();
+        return weak;
     }
 
     private static Task ScheduleCreateGroup(string value)

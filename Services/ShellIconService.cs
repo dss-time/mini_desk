@@ -9,7 +9,12 @@ namespace MiniDesk.Services;
 public static class ShellIconService
 {
     private static readonly Dictionary<string, ImageSource?> Cache = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly Queue<string> Order = [];
     private static readonly object Sync = new();
+    internal static void ClearFileCache()
+    {
+        lock (Sync) { Cache.Clear(); Order.Clear(); }
+    }
 
     public static ImageSource? GetCachedIcon(string path)
     {
@@ -28,7 +33,12 @@ public static class ShellIconService
         lock (Sync)
         {
             if (Cache.TryGetValue(path, out var cached) && cached is not null) return cached;
-            if (icon is not null) Cache[path] = icon;
+            if (icon is not null)
+            {
+                while (Order.Count >= 256) Cache.Remove(Order.Dequeue());
+                Cache[path] = icon;
+                Order.Enqueue(path);
+            }
             return icon;
         }
     }

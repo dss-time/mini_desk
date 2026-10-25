@@ -1,8 +1,12 @@
+using System.Collections.Concurrent;
+using System.Windows.Media;
+
 namespace MiniDesk.Services;
 
 /// <summary>Uses Windows Shell icons and the user's file associations for built-in choices.</summary>
 public static class GroupSystemIconService
 {
+    private static readonly ConcurrentDictionary<string, ImageSource> BuiltInIcons = new(StringComparer.OrdinalIgnoreCase);
     private static readonly Lazy<Task> Warmup = new(StartWarmup);
     private static Task StartWarmup()
     {
@@ -29,13 +33,20 @@ public static class GroupSystemIconService
     public static System.Windows.Media.ImageSource? GetIcon(string? glyph)
     {
         var path = IconPath(glyph);
-        return string.IsNullOrWhiteSpace(path) ? null : ShellIconService.GetIcon(path);
+        if (string.IsNullOrWhiteSpace(path)) return null;
+        if (BuiltInIcons.TryGetValue(path, out var cached)) return cached;
+        var icon = ShellIconService.GetIcon(path);
+        // Built-ins remain available after a large desktop scan evicts ordinary
+        // file icons. The fixed catalog needs fewer than 32 shared image sources.
+        if (icon is not null && BuiltInIcons.Count < 32) BuiltInIcons.TryAdd(path, icon);
+        return icon;
     }
 
     public static System.Windows.Media.ImageSource? GetCachedIcon(string? glyph)
     {
         var path = IconPath(glyph);
-        return string.IsNullOrWhiteSpace(path) ? null : ShellIconService.GetCachedIcon(path);
+        if (string.IsNullOrWhiteSpace(path)) return null;
+        return BuiltInIcons.TryGetValue(path, out var cached) ? cached : ShellIconService.GetCachedIcon(path);
     }
 
     private static string IconPath(string? glyph)

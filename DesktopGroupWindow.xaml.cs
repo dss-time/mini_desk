@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Collections.Specialized;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -78,7 +79,8 @@ public partial class DesktopGroupWindow : Window
 
         RefreshLocalization();
 
-        _group.Items.CollectionChanged += (_, _) => { _group.NotifyCount(); UpdateEmptyState(); };
+        _group.Items.CollectionChanged += GroupItemsChanged;
+        Closed += (_, _) => _group.Items.CollectionChanged -= GroupItemsChanged;
         RefreshVisualState();
     }
 
@@ -237,6 +239,12 @@ public partial class DesktopGroupWindow : Window
         _group.Glyph = result.Glyph; _group.Accent = result.Accent; _group.IconPath = iconPath;
         await _save();
         RefreshVisualState();
+    }
+
+    private void GroupItemsChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        _group.NotifyCount();
+        UpdateEmptyState();
     }
 
     public void RefreshVisualState()
